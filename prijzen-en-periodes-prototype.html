@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Openingsperiodes &amp; prijzen – Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#123F3D;
+    --ink-soft:#3E5F5A;
+    --muted:#7C8E8B;
+    --bg:#FFFFFF;
+    --card:#FFFFFF;
+    --line:#E4E9E6;
+    --green:#2E7D52;
+    --green-dark:#1F5F3C;
+    --green-soft:#EAF4EE;
+    --std:#9FCDA9;
+    --std-deep:#5FA873;
+    --closed:#DDE3DE;
+    --tclose:#C4534A;
+    --warn-bg:#FDF6E3;
+    --warn-line:#E8C860;
+    --err:#B3362C;
+    --err-bg:#FBEAE8;
+    --radius:16px;
+    --radius-sm:10px;
+    --shadow:0 1px 2px rgba(18,63,61,.04);
+    --s1:#E9A23B; --s2:#4E8FBF; --s3:#9B6BAF; --s4:#D96D5A; --s5:#3FA48C;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:'Plus Jakarta Sans',system-ui,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    font-size:16px;
+    line-height:1.45;
+  }
+  .wrap{max-width:560px;margin:0 auto;padding:20px 16px 80px}
+
+  header.page{padding:8px 2px 18px}
+  .loc-switch{display:flex;gap:8px;margin-bottom:12px}
+  .loc-chip{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--muted);background:var(--card);border:1.5px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer;font-family:inherit;min-height:34px}
+  .loc-chip .dot{width:7px;height:7px;border-radius:50%;background:#C9D2CA}
+  .loc-chip.on{color:var(--ink-soft);border-color:var(--green)}
+  .loc-chip.on .dot{background:var(--green)}
+
+  /* currency section */
+  .ccy-line{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;background:#F7FAF7;border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 13px;margin-top:14px}
+  .ccy-line .t{font-size:14.5px;font-weight:700}
+  .ccy-line .s{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .linklike{border:0;background:none;font:inherit;font-size:12.5px;font-weight:700;color:var(--green-dark);text-decoration:underline;cursor:pointer;padding:6px 0 0;white-space:nowrap}
+  .override-box{border:1px solid var(--warn-line);background:var(--warn-bg);border-radius:var(--radius-sm);padding:12px 13px;margin-top:10px}
+  .override-box p{font-size:12.5px;color:#7A5B0D;margin-top:8px}
+  .seg-ccy{display:flex;background:#EDF1ED;border-radius:11px;padding:3px;margin-top:6px;max-width:360px}
+  .seg-ccy button{flex:1;border:0;background:transparent;font:inherit;font-weight:600;font-size:13px;color:var(--ink-soft);padding:9px 6px;border-radius:8px;cursor:pointer;min-height:40px}
+  .seg-ccy button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(18,64,59,.15)}
+  .rate-note{font-size:12px;color:var(--muted);margin-top:7px}
+  .save-as{font-size:12.5px;font-weight:600;color:var(--green-dark);margin-top:5px}
+  h1{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+  .sub{color:var(--muted);font-size:14.5px;margin-top:6px;max-width:44ch}
+
+  /* ---------- Year at a glance (sticky) ---------- */
+  .glance{
+    position:sticky;top:0;z-index:50;
+    background:linear-gradient(to bottom, var(--bg) 82%, rgba(255,255,255,0));
+    padding:10px 0 14px;
+    margin:0 -2px;
+  }
+  .glance-card{background:#F6FAF7;border:1px solid var(--line);border-radius:var(--radius);padding:14px 14px 12px}
+  .glance-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+  .eyebrow{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .glance-head .nights{font-size:12.5px;color:var(--ink-soft);font-weight:600}
+  .bar{display:flex;height:34px;border-radius:9px;overflow:hidden;border:1px solid var(--line)}
+  .bar .seg{height:100%;min-width:1px}
+  .seg.closed{background:repeating-linear-gradient(135deg,var(--closed) 0 5px,#EDF1ED 5px 10px)}
+  .seg.std{background:var(--std)}
+  .seg.tclose{background:repeating-linear-gradient(135deg,var(--tclose) 0 5px,#DE8A83 5px 10px)}
+  .seg.tclose.prov{opacity:.55}
+  .months{display:flex;margin-top:5px}
+  .months span{flex:1;text-align:center;font-size:9.5px;font-weight:600;color:var(--muted);letter-spacing:.04em}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:10px}
+  .lg{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft);font-weight:500}
+  .lg i{width:12px;height:12px;border-radius:4px;display:inline-block;border:1px solid rgba(0,0,0,.06)}
+
+  /* ---------- Cards ---------- */
+  section.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 16px;margin-top:16px}
+  .card-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:4px}
+  .step-ico{flex:none;width:34px;height:34px;border-radius:10px;background:var(--green-soft);color:var(--green-dark);display:grid;place-items:center;font-size:16px}
+  .card-head h2{font-size:18px;font-weight:700;letter-spacing:-.01em}
+  .card-head p{font-size:13.5px;color:var(--muted);margin-top:2px}
+
+  /* segmented */
+  .segmented{display:flex;background:#EDF1ED;border-radius:12px;padding:4px;margin-top:14px}
+  .segmented button{flex:1;border:0;background:transparent;font:inherit;font-weight:600;font-size:14.5px;color:var(--ink-soft);padding:11px 8px;border-radius:9px;cursor:pointer;transition:all .15s}
+  .segmented button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(18,64,59,.15)}
+
+  .field-label{font-size:13px;font-weight:600;color:var(--ink-soft);margin:14px 0 6px;display:block}
+  .hint{font-size:12.5px;color:var(--muted)}
+
+  .range-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .range-row .arrow{color:var(--muted);font-size:14px}
+  select,input[type=number],input[type=text],input[type=date]{
+    font:inherit;font-size:15px;color:var(--ink);
+    border:1px solid var(--line);border-radius:14px;
+    background:#FFFFFF;padding:10px 12px;min-height:46px;
+  }
+  select:focus,input:focus{outline:2px solid var(--green);outline-offset:1px;border-color:var(--green)}
+  select.day{width:74px}
+  select.month{width:118px}
+  input.money{width:104px;text-align:right}
+  input[type=date]{width:100%}
+  .rm{border:0;background:transparent;color:var(--muted);font-size:19px;line-height:1;padding:8px;cursor:pointer;border-radius:8px;min-width:44px;min-height:44px}
+  .rm:hover{background:#F0F3F0;color:var(--err)}
+
+  .money-row{display:flex;align-items:center;gap:10px;margin-top:4px}
+  .money-row .cur{font-size:14px;font-weight:600;color:var(--muted)}
+  .money-sub{font-size:12.5px;color:var(--muted);margin-top:3px}
+
+  .allin{display:flex;align-items:center;justify-content:space-between;background:var(--green-soft);border-radius:var(--radius-sm);padding:11px 13px;margin-top:14px}
+  .allin .t{font-size:13px;font-weight:600;color:var(--green-dark)}
+  .allin .v{font-size:16px;font-weight:800;color:var(--green-dark)}
+
+  .btn-add{
+    display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+    border:1.5px dashed #BFD2C4;background:transparent;color:var(--green-dark);
+    font:inherit;font-weight:600;font-size:14.5px;border-radius:12px;padding:13px;margin-top:14px;cursor:pointer;min-height:48px;
+  }
+  .btn-add:hover{background:var(--green-soft);border-style:solid}
+
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+  .toggle-row .lbl{font-size:15px;font-weight:600}
+  .toggle-row .sub{font-size:12.5px;color:var(--muted);margin-top:1px}
+  .switch{position:relative;flex:none;width:50px;height:30px;border-radius:999px;background:#D8DFD9;border:0;cursor:pointer;transition:background .15s}
+  .switch.on{background:var(--green)}
+  .switch::after{content:'';position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .15s}
+  .switch.on::after{left:23px}
+
+  /* period cards */
+  .pcard{border:1px solid var(--line);border-radius:12px;padding:13px;margin-top:12px;position:relative}
+  .pcard .swatch{position:absolute;left:0;top:12px;bottom:12px;width:4px;border-radius:0 4px 4px 0}
+  .pcard-inner{padding-left:10px}
+  .pcard-top{display:flex;align-items:center;gap:8px}
+  .pcard-top input[type=text]{flex:1;min-width:0;font-weight:600}
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;border-radius:999px;padding:4px 10px;margin-top:9px}
+  .chip.warn{background:var(--warn-bg);color:#8A6A14;border:1px solid var(--warn-line)}
+  .chip.err{background:var(--err-bg);color:var(--err);border:1px solid #EBB7B1}
+  .chip button{border:0;background:transparent;font:inherit;font-weight:700;color:inherit;text-decoration:underline;cursor:pointer;padding:0}
+  .pnight{font-size:12.5px;color:var(--ink-soft);margin-top:9px;font-weight:500}
+
+  /* conflict panel */
+  .conflict{background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:12px;padding:13px;margin-top:14px}
+  .conflict h3{font-size:14px;font-weight:700;color:#7A5B0D;display:flex;gap:7px;align-items:center}
+  .conflict p{font-size:13px;color:#7A5B0D;margin-top:5px}
+  .conflict .actions{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
+  .conflict .actions button{flex:1;min-width:130px;border:1px solid var(--warn-line);background:#fff;font:inherit;font-size:13px;font-weight:600;color:var(--ink);border-radius:9px;padding:10px 8px;cursor:pointer;min-height:44px}
+  .conflict .actions button:hover{background:#FFF9EA}
+
+  /* closures */
+  .ccard{border:1px solid var(--line);border-radius:12px;padding:13px;margin-top:12px}
+  .ccard.expired{opacity:.55}
+  .ccard-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+  .ccard-top .t{font-weight:700;font-size:14.5px}
+  .ccard-top .d{font-size:13px;color:var(--ink-soft);margin-top:2px}
+  .badge{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:6px;padding:3px 8px}
+  .badge.auto{background:#EDF1ED;color:var(--muted)}
+  .badge.exp{background:var(--err-bg);color:var(--err)}
+  .cform{margin-top:12px;border-top:1px dashed var(--line);padding-top:12px}
+  .cform .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .checkline{display:flex;align-items:center;gap:9px;margin-top:11px;font-size:14px;color:var(--ink-soft)}
+  .checkline input{width:19px;height:19px;accent-color:var(--green);min-height:0}
+  .btn-primary{border:0;background:var(--green);color:#fff;font:inherit;font-weight:700;font-size:14.5px;border-radius:12px;padding:12px 22px;cursor:pointer;min-height:46px}
+  .btn-primary:hover{background:var(--green-dark)}
+  .btn-ghost{border:0;background:transparent;color:var(--muted);font:inherit;font-weight:600;font-size:14px;padding:12px 14px;cursor:pointer}
+
+  /* timeline */
+  .trow{display:flex;gap:12px;padding:13px 2px;border-bottom:1px solid var(--line)}
+  .trow:last-child{border-bottom:0}
+  .trow .tdot{flex:none;width:11px;height:11px;border-radius:50%;margin-top:5px;border:1px solid rgba(0,0,0,.08)}
+  .trow .tt{flex:1;min-width:0}
+  .trow .tt .n{font-weight:700;font-size:15px}
+  .trow .tt .r{font-size:13px;color:var(--ink-soft);margin-top:1px}
+  .trow .tt .m{font-size:12px;color:var(--muted);margin-top:1px}
+  .trow .pr{flex:none;text-align:right}
+  .trow .pr .v{font-weight:800;font-size:15px}
+  .trow .pr .u{font-size:11.5px;color:var(--muted)}
+  .trow.dim .n,.trow.dim .pr .v{color:var(--muted)}
+
+  /* price check */
+  .pc-result{margin-top:12px;border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .pc-result.open{background:var(--green-soft)}
+  .pc-result.closed{background:var(--err-bg)}
+  .pc-result .st{font-weight:700;font-size:15px}
+  .pc-result.open .st{color:var(--green-dark)}
+  .pc-result.closed .st{color:var(--err)}
+  .pc-result .why{font-size:12.5px;color:var(--ink-soft);margin-top:2px}
+  .pc-result .amt{font-weight:800;font-size:19px;color:var(--green-dark);white-space:nowrap}
+
+  /* moderation preview */
+  details.mod{margin-top:16px}
+  details.mod summary{list-style:none;cursor:pointer;background:var(--ink);color:#EAF3EE;border-radius:var(--radius);padding:15px 16px;display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:15px}
+  details.mod summary::-webkit-details-marker{display:none}
+  details.mod summary .arr{transition:transform .15s;font-size:13px}
+  details.mod[open] summary{border-radius:var(--radius) var(--radius) 0 0}
+  details.mod[open] summary .arr{transform:rotate(180deg)}
+  .modbody{background:#1A4A44;border-radius:0 0 var(--radius) var(--radius);padding:16px;color:#D7E6DF}
+  .modrow{padding:9px 0;border-bottom:1px solid rgba(255,255,255,.09);font-size:13.5px;display:flex;gap:12px}
+  .modrow:last-child{border-bottom:0}
+  .modrow .k{flex:none;width:112px;color:#9DBBAF;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.06em;padding-top:1px}
+  .modrow .v{flex:1;white-space:pre-line}
+  .modrow .v b{color:#fff}
+  .modstatus{margin-top:12px;border-radius:9px;padding:9px 12px;font-size:13px;font-weight:600}
+  .modstatus.ok{background:rgba(63,164,140,.2);color:#8FE0C8}
+  .modstatus.bad{background:rgba(217,109,90,.22);color:#F3B0A3}
+
+  footer{margin-top:26px;text-align:center;font-size:12px;color:var(--muted)}
+
+  /* save bar + toast */
+  .savebar{position:sticky;bottom:0;z-index:40;background:rgba(255,255,255,.95);backdrop-filter:blur(5px);border-top:1px solid var(--line);margin-top:16px;padding:13px 2px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .sb-status{font-size:13px;font-weight:600;line-height:1.35}
+  .sb-status.ok{color:var(--green-dark)}
+  .sb-status.bad{color:var(--err)}
+  .btn-primary:disabled{background:#C3D3C9;cursor:not-allowed}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:26px;background:var(--ink);color:#fff;font-size:14px;font-weight:600;padding:13px 20px;border-radius:12px;z-index:200;box-shadow:0 10px 28px rgba(10,34,31,.3);max-width:90vw;text-align:center}
+
+  /* closure question inside opening card */
+  .closure-block{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+  .cq{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+  .cq .lbl{font-size:15px;font-weight:600}
+  .cq .sub{font-size:12.5px;color:var(--muted);margin-top:2px;max-width:40ch}
+  .btn-mini{flex:none;border:1.5px solid var(--line);background:var(--card);color:var(--green-dark);font:inherit;font-weight:700;font-size:13px;border-radius:999px;padding:8px 16px;cursor:pointer;min-height:40px}
+  .btn-mini:hover{border-color:var(--green);background:var(--green-soft)}
+  .tip{font-size:12.5px;color:var(--muted);background:#F6FAF7;border-radius:10px;padding:9px 12px;margin-top:10px}
+  /* the Other… segment is a real select */
+  .seg-ccy select.segsel{flex:1;border:0;background:transparent;font:inherit;font-weight:600;font-size:13px;color:var(--ink-soft);padding:9px 6px;border-radius:8px;cursor:pointer;min-height:40px;appearance:none;-webkit-appearance:none;text-align:center;text-align-last:center}
+  .seg-ccy select.segsel.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(18,64,59,.15)}
+
+  /* ---------- desktop ---------- */
+  @media (min-width:1024px){
+    .wrap{max-width:1200px;padding:28px 32px 80px}
+    header.page{padding:8px 2px 24px}
+    h1{font-size:32px}
+    .sub{font-size:15px}
+    .main{display:grid;grid-template-columns:minmax(0,1fr) 430px;gap:0 28px;align-items:start}
+    .col-left section.card:first-child{margin-top:0}
+    .side{position:sticky;top:20px;max-height:calc(100vh - 40px);overflow-y:auto;scrollbar-width:thin;padding:2px}
+    .side::-webkit-scrollbar{width:8px}
+    .side::-webkit-scrollbar-thumb{background:#CBD6CE;border-radius:4px}
+    .glance{position:static;background:none;padding:0;margin:0}
+    .side section.card,.side details.mod{margin-top:16px}
+    section.card{padding:22px}
+    .bar{height:40px}
+    .conflict .actions button{min-width:170px}
+  }
+  @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <div class="loc-switch" role="tablist" aria-label="Demolocatie">
+      <button class="loc-chip on" id="locNL"><span class="dot"></span> De Reigershorst · NL</button>
+      <button class="loc-chip" id="locCH"><span class="dot"></span> Bergblick · CH</button>
+    </div>
+    <h1>Openingsperiodes &amp; prijzen</h1>
+    <p class="sub">Vertel camperaars wanneer je open bent en wat een nacht kost. Het jaaroverzicht werkt live bij terwijl je invult.</p>
+  </header>
+
+  <!-- YEAR AT A GLANCE -->
+  <div class="glance">
+    <div class="glance-card">
+      <div class="glance-head">
+        <span class="eyebrow">Je jaar in één oogopslag</span>
+        <span class="nights" id="glanceNights"></span>
+      </div>
+      <div class="bar" id="yearBar" role="img" aria-label="Jaaroverzicht van opening en prijzen"></div>
+      <div class="months">
+        <span>J</span><span>F</span><span>M</span><span>A</span><span>M</span><span>J</span><span>J</span><span>A</span><span>S</span><span>O</span><span>N</span><span>D</span>
+      </div>
+      <div class="legend" id="legend"></div>
+    </div>
+  </div>
+
+  <div class="main">
+  <div class="col-left">
+  <!-- 1. OPENING PERIOD -->
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Wanneer ben je open?</h2>
+        <p>Dit bepaalt wanneer camperaars je locatie als open zien. Prijzen komen daarna.</p>
+      </div>
+    </div>
+    <div class="segmented" role="tablist">
+      <button id="segAll" role="tab">Hele jaar open</button>
+      <button id="segPart" role="tab">Deel van het jaar</button>
+    </div>
+    <div id="openingRanges"></div>
+
+    <div class="closure-block">
+      <div class="cq">
+        <div>
+          <div class="lbl">Tijdelijk gesloten tijdens het seizoen?</div>
+          <div class="sub">Een festival, markt of werkzaamheden. Verloopt vanzelf en verandert nooit je openingsperiode.</div>
+        </div>
+        <button class="btn-mini" id="btnAddClosure">＋ Toevoegen</button>
+      </div>
+      <div id="closureList"></div>
+      <div class="cform" id="closureForm" hidden>
+        <div class="grid2">
+          <div><label class="field-label" style="margin-top:0">Vanaf</label><input type="date" id="cFrom" min="2026-01-01" max="2027-12-31"></div>
+          <div><label class="field-label" style="margin-top:0">Tot</label><input type="date" id="cTo" min="2026-01-01" max="2027-12-31"></div>
+        </div>
+        <label class="checkline"><input type="checkbox" id="cUnknown"> Einddatum nog onbekend</label>
+      <div class="hint" id="cUnknownHint" hidden style="margin-top:6px">De locatie wordt als gesloten getoond vanaf de startdatum, tot je een einddatum instelt of de sluiting verwijdert.</div>
+        <label class="field-label">Reden <span class="hint">· optioneel, zichtbaar voor camperaars</span></label>
+        <input type="text" id="cReason" placeholder="bijv. Lokaal festival" style="width:100%">
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn-primary" id="cSave" style="margin-top:13px">Sluiting toevoegen</button>
+          <button class="btn-ghost" id="cCancel">Annuleren</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. PRICES -->
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Prijzen</h2>
+        <p>Eén standaardtarief dekt je hele openingsperiode. Seizoensprijzen zijn optioneel.</p>
+      </div>
+    </div>
+
+    <div class="ccy-line">
+      <div>
+        <div class="t">Prijzen in <span id="locCcyLbl">EUR</span></div>
+        <div class="s" id="locCcyWhy"></div>
+      </div>
+      <button class="linklike" id="ovrBtn">Rekent in een andere valuta?</button>
+    </div>
+    <div class="override-box" id="ovrBox" hidden>
+      <label class="field-label" style="margin-top:0">Werkelijke prijsvaluta</label>
+      <select id="ovrSel" style="width:190px"></select>
+      <p>Alleen voor locaties die echt in een andere valuta rekenen (bijv. EUR-prijzen in Zwitserland). Camperaars zien de prijzen dan in die valuta. Bestaande bedragen worden niet omgerekend.</p>
+    </div>
+
+    <label class="field-label">Ik wil bedragen invoeren in</label>
+    <div class="seg-ccy" id="inputSeg"></div>
+    <p class="rate-note" id="rateNote" hidden></p>
+
+    <label class="field-label">Standaardtarief <span class="hint">· 2 personen, 1 camper, per nacht</span></label>
+    <div class="money-row"><span class="cur curLbl">EUR</span><input type="number" class="money" id="stdRate" min="0" step="0.5" inputmode="decimal"></div>
+
+    <label class="field-label">Toeristenbelasting <span class="hint">· per persoon, per nacht</span></label>
+    <div class="money-row"><span class="cur curLbl">EUR</span><input type="number" class="money" id="stdTax" min="0" step="0.05" inputmode="decimal"></div>
+    <div class="save-as" id="stdSaveAs" hidden></div>
+
+    <div class="allin"><span class="t" id="allinLabel">Camperaars zien</span><span class="v" id="allinValue"></span></div>
+
+    <div class="toggle-row">
+      <div>
+        <div class="lbl">Andere prijs per seizoen?</div>
+        <div class="sub">Dagen zonder seizoensprijs houden het standaardtarief.</div>
+      </div>
+      <button class="switch" id="seasonToggle" role="switch" aria-label="Different price per season"></button>
+    </div>
+
+    <div id="seasonZone"></div>
+    <div id="conflictZone"></div>
+  </section>
+
+  <div class="savebar">
+    <div class="sb-status" id="sbStatus"></div>
+    <button class="btn-primary" id="saveBtn" style="margin:0">Wijzigingen opslaan</button>
+  </div>
+  </div><!-- /col-left -->
+
+  <aside class="side">
+  <div id="glanceDock"></div>
+
+  <!-- 4. TIMELINE -->
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Wat camperaars zien</h2>
+        <p>Je jaar, op volgorde.</p>
+      </div>
+    </div>
+    <div id="timeline"></div>
+
+    <label class="field-label" style="margin-top:18px">Controleer een datum</label>
+    <input type="date" id="pcDate" min="2026-01-01" max="2026-12-31" value="2026-08-10">
+    <div id="pcResult"></div>
+  </section>
+  </aside>
+  </div><!-- /main -->
+
+  <div class="toast" id="toast" hidden>Changes saved. Camperaars zien the update right away.</div>
+
+  <footer>Prototype · terugkerende datums (zonder jaar) voor opening &amp; prijzen, echte datums voor sluitingen</footer>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  /* ---------- date helpers (non-leap year, 365 days) ---------- */
+  const ML=[31,28,31,30,31,30,31,31,30,31,30,31];
+  const MN=['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+  const CUM=[0];for(let i=0;i<12;i++)CUM.push(CUM[i]+ML[i]);
+  const DOY=(m,d)=>CUM[m]+d;                    /* m 0-11, d 1.. → 1..365 */
+  const fromDOY=doy=>{let m=0;while(doy>CUM[m+1])m++;return{m,d:doy-CUM[m]}};
+  const fmt=doy=>{const{m,d}=fromDOY(doy);return d+' '+MN[m]};
+  const daysOf=(s,e)=>{const out=[];if(s<=e){for(let i=s;i<=e;i++)out.push(i)}else{for(let i=s;i<=365;i++)out.push(i);for(let i=1;i<=e;i++)out.push(i)}return out};
+  /* currencies: symbol, decimals (0 where whole amounts are the norm) */
+  /* currencies: symbol, decimals (0 where whole amounts are the norm) */
+  const CCY={EUR:['€',2],GBP:['£',2],CHF:['CHF ',2],DKK:['kr ',2],NOK:['kr ',2],SEK:['kr ',2],ISK:['kr ',0],PLN:['zł ',2],CZK:['Kč ',0],HUF:['Ft ',0],RON:['lei ',2],BGN:['лв ',2],RSD:['din ',0],BAM:['KM ',2],ALL:['L ',0],TRY:['₺',2],MAD:['MAD ',2],GEL:['₾',2],USD:['$',2],CAD:['C$',2],AUD:['A$',2],NZD:['NZ$',2]};
+  /* indicative rates per 1 EUR (demo, dated) */
+  const RATES={EUR:1,GBP:0.85,CHF:0.94,DKK:7.46,NOK:11.4,SEK:11.2,ISK:145,PLN:4.27,CZK:24.6,HUF:395,RON:4.98,BGN:1.956,RSD:117,BAM:1.956,ALL:98,TRY:47,MAD:10.5,GEL:3.1,USD:1.16,CAD:1.58,AUD:1.75,NZD:1.90};
+  const RATE_DATE='10 Aug 2026';
+  const r2=v=>Math.round(v*100)/100;
+  const conv=(v,from,to)=>from===to?v:r2(v/RATES[from]*RATES[to]);
+  /* money() always renders the LOCAL currency: what campers see */
+  const money=v=>{const[s,dec]=CCY[state.localCcy];return s+v.toFixed(dec).replace('.',',')};
+  const fmtIn=v=>{const[s,dec]=CCY[state.inputCcy];return s+v.toFixed(dec).replace('.',',')};
+  const TODAY='2026-08-10';
+
+  /* runs from a day-state array; merges wrap (365→1) runs of same key */
+  function runs(arr,keyFn){
+    const out=[];let cur=null;
+    for(let d=1;d<=365;d++){
+      const k=keyFn(arr[d]);
+      if(cur&&cur.key===k){cur.end=d}else{cur&&out.push(cur);cur={key:k,start:d,end:d,val:arr[d]}}
+    }
+    cur&&out.push(cur);
+    return out;
+  }
+
+  /* ---------- state ---------- */
+  const COLORS=['#E9A23B','#4E8FBF','#9B6BAF','#D96D5A','#3FA48C'];
+  let uid=1;
+  const PRESETS={
+    nl:{name:'Camperplaats De Reigershorst · 98328',country:'Nederland',ccy:'EUR',std:[15.00,1.70],season:[22.50,2.45]},
+    ch:{name:'Camperplatz Bergblick · 74112',country:'Zwitserland',ccy:'CHF',std:[14.00,1.60],season:[21.00,2.30]}
+  };
+  const state={
+    loc:'nl',
+    country:PRESETS.nl.country,
+    countryCcy:PRESETS.nl.ccy,   /* default from the location's country */
+    localCcy:PRESETS.nl.ccy,     /* actual pricing currency (override possible) */
+    ccyOverridden:false,
+    inputCcy:PRESETS.nl.ccy,     /* what the user types in; never changes stored data */
+    openAllYear:false,
+    openings:[{id:uid++,sM:3,sD:1,eM:9,eD:31}],                 /* 1 Apr – 31 Oct */
+    stdRate:15.00, stdTax:1.70,
+    seasonal:true,
+    seasons:[{id:uid++,name:'Hoogseizoen',sM:6,sD:1,eM:7,eD:31,rate:22.50,tax:2.45,color:COLORS[0]}],
+    closures:[{id:uid++,from:'2026-09-12',to:'2026-09-19',unknown:false,reason:'Lokaal festival'}]
+  };
+
+  /* ---------- derived ---------- */
+  function openSet(){
+    const s=new Uint8Array(366);
+    if(state.openAllYear){s.fill(1);return s}
+    for(const o of state.openings)for(const d of daysOf(DOY(o.sM,o.sD),DOY(o.eM,o.eD)))s[d]=1;
+    return s;
+  }
+  function seasonInfo(p,open){
+    const all=daysOf(DOY(p.sM,p.sD),DOY(p.eM,p.eD));
+    const inside=all.filter(d=>open[d]);
+    return{all,inside,outside:all.length-inside.length};
+  }
+  function conflicts(open){
+    const list=[];
+    for(let i=0;i<state.seasons.length;i++)for(let j=i+1;j<state.seasons.length;j++){
+      const A=new Set(seasonInfo(state.seasons[i],open).inside);
+      const both=seasonInfo(state.seasons[j],open).inside.filter(d=>A.has(d));
+      if(both.length)list.push({a:state.seasons[i],b:state.seasons[j],days:both});
+    }
+    return list;
+  }
+  function closureDays(c){
+    const p=s=>{const[x,mo,d]=s.split('-').map(Number);return{y:x,doy:DOY(mo-1,Math.min(d,ML[mo-1]))}};
+    const f=p(c.from);
+    const t=c.unknown?{y:f.y,doy:365}:p(c.to||c.from);  /* unknown end: closed until further notice */
+    if(f.y!==2026&&t.y!==2026)return[];
+    const s=f.y<2026?1:f.doy, e=t.y>2026?365:t.doy;
+    return s<=e?daysOf(s,e):[];
+  }
+  const isVerlopen=c=>!c.unknown&&c.to&&c.to<TODAY;
+
+  /* day states: closed | std | season(id) | tclose */
+  function dayStates(){
+    const open=openSet();
+    const arr=new Array(366);
+    for(let d=1;d<=365;d++)arr[d]=open[d]?{t:'std'}:{t:'closed'};
+    for(const p of state.seasons)for(const d of seasonInfo(p,open).inside)arr[d]={t:'season',p};
+    for(const c of state.closures){if(isVerlopen(c))continue;for(const d of closureDays(c))if(open[d])arr[d]={t:'tclose',c,under:arr[d]}}
+    return{arr,open};
+  }
+  const allIn=(r,t)=>r+2*t;
+  const priceLabel=v=>v===0?'Free':money(v)+'/night';
+
+  /* ---------- rendering ---------- */
+  const $=id=>document.getElementById(id);
+
+  function render(){
+    const{arr,open}=dayStates();
+    renderGlance(arr,open);
+    renderOpening();
+    renderPrices(open);
+    renderConflicts(open);
+    renderClosures();
+    renderTimeline(arr);
+    renderPriceCheck(arr);
+    renderSave(open);
+  }
+
+  function renderGlance(arr,open){
+    const bar=$('yearBar');bar.innerHTML='';
+    const rs=runs(arr,v=>v.t+(v.p?v.p.id:'')+(v.c?(v.c.unknown?'u':''):''));
+    for(const r of rs){
+      const v=r.val,seg=document.createElement('div');
+      seg.className='seg '+(v.t==='season'?'':v.t)+(v.t==='tclose'&&v.c.unknown?' prov':'');
+      if(v.t==='season')seg.style.background=v.p.color;
+      seg.style.width=((r.end-r.start+1)/365*100)+'%';
+      const label=v.t==='closed'?'Gesloten':v.t==='tclose'?'Tijdelijk gesloten':v.t==='season'?v.p.name+' · '+priceLabel(allIn(v.p.rate,v.p.tax)):'Standaardtarief · '+priceLabel(allIn(state.stdRate,state.stdTax));
+      seg.title=fmt(r.start)+' – '+fmt(r.end)+' · '+label;
+      bar.appendChild(seg);
+    }
+    let n=0;for(let d=1;d<=365;d++)if(open[d]&&arr[d].t!=='tclose')n++;
+    $('glanceNights').textContent=n+' boekbare nachten';
+    const lg=$('legend');lg.innerHTML='';
+    const items=[['Standaardtarief','var(--std)']];
+    for(const p of state.seasons)items.push([p.name||'Season',p.color]);
+    items.push(['Gesloten (buiten opening)','repeating-linear-gradient(135deg,#DDE3DE 0 4px,#EDF1ED 4px 8px)']);
+    if(state.closures.some(c=>!isVerlopen(c)))items.push(['Tijdelijk gesloten','repeating-linear-gradient(135deg,#C4534A 0 4px,#DE8A83 4px 8px)']);
+    for(const[t,c]of items){const el=document.createElement('span');el.className='lg';el.innerHTML='<i style="background:'+c+'"></i>'+t;lg.appendChild(el)}
+  }
+
+  const daySel=(v,cls)=>{let h='<select class="day '+(cls||'')+'" aria-label="Dag">';for(let d=1;d<=31;d++)h+='<option '+(d===v?'selected':'')+'>'+d+'</option>';return h+'</select>'};
+  const monSel=(v,cls)=>{let h='<select class="month '+(cls||'')+'" aria-label="Maand">';MN.forEach((m,i)=>h+='<option value="'+i+'" '+(i===v?'selected':'')+'>'+m+'</option>');return h+'</select>'};
+
+  function renderOpening(){
+    $('segAll').classList.toggle('on',state.openAllYear);
+    $('segPart').classList.toggle('on',!state.openAllYear);
+    const z=$('openingRanges');z.innerHTML='';
+    if(state.openAllYear)return;
+    state.openings.forEach((o,idx)=>{
+      const d=document.createElement('div');d.className='pcard';d.innerHTML=
+        '<div class="pcard-inner" style="padding-left:2px">'+
+        '<div class="range-row">'+daySel(o.sD,'osD')+monSel(o.sM,'osM')+'<span class="arrow">→</span>'+daySel(o.eD,'oeD')+monSel(o.eM,'oeM')+
+        (state.openings.length>1?'<button class="rm" aria-label="Openingsperiode verwijderen">✕</button>':'')+'</div>'+
+        (DOY(o.sM,o.sD)>DOY(o.eM,o.eD)?'<div class="pnight">Loopt door over de jaarwisseling (winteropening)</div>':'')+
+        '</div>';
+      const set=(sel,fn)=>d.querySelector(sel).addEventListener('change',e=>{fn(+e.target.value);render()});
+      set('.osD',v=>o.sD=clampD(v,o.sM));set('.osM',v=>{o.sM=v;o.sD=clampD(o.sD,v)});
+      set('.oeD',v=>o.eD=clampD(v,o.eM));set('.oeM',v=>{o.eM=v;o.eD=clampD(o.eD,v)});
+      const rm=d.querySelector('.rm');rm&&rm.addEventListener('click',()=>{state.openings.splice(idx,1);render()});
+      z.appendChild(d);
+    });
+    const add=document.createElement('button');add.className='btn-add';add.textContent='＋ Nog een openingsperiode toevoegen';
+    add.addEventListener('click',()=>{state.openings.push({id:uid++,sM:0,sD:1,eM:0,eD:31});render()});
+    z.appendChild(add);
+    if(openingOverlapPairs()>0){
+      const warn=document.createElement('div');
+      warn.innerHTML='<span class="chip warn" style="margin-top:10px">⚠ Je openingsperiodes overlappen · <button class="mergeAll">voeg ze samen tot één</button></span>';
+      warn.querySelector('.mergeAll').addEventListener('click',()=>{mergeOpenings();render()});
+      z.appendChild(warn);
+    }
+    if(state.openings.length>1){
+      const tip=document.createElement('div');tip.className='tip';
+      tip.textContent='Splits je het seizoen rond een eenmalige sluiting (festival, werkzaamheden)? Gebruik hieronder een tijdelijke sluiting: die verloopt vanzelf.';
+      z.appendChild(tip);
+    }
+  }
+  const clampD=(d,m)=>Math.min(d,ML[m]);
+
+  function openingOverlapPairs(){
+    if(state.openAllYear)return 0;
+    let n=0;
+    const sets=state.openings.map(o=>new Set(daysOf(DOY(o.sM,o.sD),DOY(o.eM,o.eD))));
+    for(let i=0;i<sets.length;i++)for(let j=i+1;j<sets.length;j++){
+      for(const d of sets[j])if(sets[i].has(d)){n++;break}
+    }
+    return n;
+  }
+  function mergeOpenings(){
+    const days=[];const open=openSet();
+    for(let d=1;d<=365;d++)if(open[d])days.push(d);
+    state.openings=setToRanges(days).map(r=>({id:uid++,...r}));
+  }
+
+  function renderPrices(open){
+    const L=state.localCcy,I=state.inputCcy,foreign=I!==L;
+    /* currency statement */
+    $('locCcyLbl').textContent=L;
+    $('locCcyWhy').textContent=state.ccyOverridden
+      ?'Handmatig ingesteld · landstandaard is '+state.countryCcy+' ('+state.country+')'
+      :'De lokale valuta van '+state.country+'. Dit is wat camperaars zien.';
+    $('ovrSel').value=L;
+    /* input-currency segment: [local] [EUR if different] [Other…] */
+    const seg=$('inputSeg');seg.innerHTML='';
+    const fixed=[[L,L+' (lokaal)']];
+    if(L!=='EUR')fixed.push(['EUR','EUR']);
+    const otherActive=foreign&&!(L!=='EUR'&&I==='EUR');
+    for(const[val,lbl]of fixed){
+      const b=document.createElement('button');
+      b.textContent=lbl;b.className=val===I?'on':'';
+      b.addEventListener('click',()=>{state.inputCcy=val;render()});
+      seg.appendChild(b);
+    }
+    /* third segment is itself a select: tap opens the list, choosing activates it */
+    const os=document.createElement('select');
+    os.className='segsel'+(otherActive?' on':'');
+    os.setAttribute('aria-label','Andere invoervaluta');
+    os.innerHTML='<option value="" disabled hidden>Anders…</option>'+Object.keys(CCY).filter(c=>c!==L&&!(L!=='EUR'&&c==='EUR')).map(c=>'<option value="'+c+'">'+c+' ('+CCY[c][0].trim()+')</option>').join('');
+    os.value=otherActive?I:'';
+    os.addEventListener('change',e=>{state.inputCcy=e.target.value;render()});
+    seg.appendChild(os);
+    const rn=$('rateNote');
+    if(foreign){
+      rn.hidden=false;
+      rn.textContent='Indicatieve koers '+RATE_DATE+': 1 '+I+' ≈ '+conv(1,I,L).toFixed(3)+' '+L+'. Je typt '+I+', camperaars zien altijd '+L+'.';
+    }else rn.hidden=true;
+    /* std fields: shown in input currency, stored in local */
+    document.querySelectorAll('.curLbl').forEach(el=>el.textContent=I);
+    $('stdRate').value=r2(conv(state.stdRate,L,I));
+    $('stdTax').value=r2(conv(state.stdTax,L,I));
+    const sa=$('stdSaveAs');
+    if(foreign){sa.hidden=false;sa.textContent='Opgeslagen als '+money(state.stdRate)+' + '+money(state.stdTax)+' belasting p.p.'}
+    else sa.hidden=true;
+    const a=allIn(state.stdRate,state.stdTax);
+    $('allinValue').textContent=a===0?'Free':money(a)+' per nacht';
+    $('allinLabel').textContent=a===0?'Camperaars zien':'Camperaars zien (incl. belasting voor 2)';
+    $('seasonToggle').classList.toggle('on',state.seasonal);
+    const z=$('seasonZone');z.innerHTML='';
+    if(!state.seasonal)return;
+    state.seasons.forEach((p,idx)=>{
+      const info=seasonInfo(p,open);
+      const d=document.createElement('div');d.className='pcard';
+      d.innerHTML='<span class="swatch" style="background:'+p.color+'"></span><div class="pcard-inner">'+
+        '<div class="pcard-top"><input type="text" class="pname" value="'+p.name.replace(/"/g,'&quot;')+'" placeholder="e.g. Hoogseizoen"><button class="rm" aria-label="Seizoensprijs verwijderen">✕</button></div>'+
+        '<label class="field-label">Periode</label>'+
+        '<div class="range-row">'+daySel(p.sD,'psD')+monSel(p.sM,'psM')+'<span class="arrow">→</span>'+daySel(p.eD,'peD')+monSel(p.eM,'peM')+'</div>'+
+        '<div class="range-row" style="margin-top:11px;gap:16px">'+
+          '<div><label class="field-label" style="margin:0 0 5px">Tarief</label><div class="money-row" style="margin:0"><span class="cur">'+I+'</span><input type="number" class="money prate" min="0" step="0.5" value="'+r2(conv(p.rate,L,I))+'" inputmode="decimal"></div></div>'+
+          '<div><label class="field-label" style="margin:0 0 5px">Tourist belasting p.p.</label><div class="money-row" style="margin:0"><span class="cur">'+I+'</span><input type="number" class="money ptax" min="0" step="0.05" value="'+r2(conv(p.tax,L,I))+'" inputmode="decimal"></div></div>'+
+        '</div>'+
+        (foreign?'<div class="save-as">Opgeslagen als '+money(p.rate)+' + '+money(p.tax)+' belasting p.p.</div>':'')+
+        '<div class="pnight">Camperaars zien '+priceLabel(allIn(p.rate,p.tax))+' · '+info.inside.length+' nachten</div>'+
+        (info.outside>0?'<span class="chip warn">⚠ '+info.outside+' dagen vallen buiten je openingsperiode · <button class="snap">binnen opening trekken</button></span>':'')+
+        '</div>';
+      const on=(sel,ev,fn)=>d.querySelector(sel).addEventListener(ev,e=>{fn(e.target);render()});
+      on('.pname','change',t=>p.name=t.value||'Season');
+      on('.psD','change',t=>p.sD=clampD(+t.value,p.sM));on('.psM','change',t=>{p.sM=+t.value;p.sD=clampD(p.sD,p.sM)});
+      on('.peD','change',t=>p.eD=clampD(+t.value,p.eM));on('.peM','change',t=>{p.eM=+t.value;p.eD=clampD(p.eD,p.eM)});
+      on('.prate','change',t=>p.rate=conv(Math.max(0,+t.value||0),I,L));
+      on('.ptax','change',t=>p.tax=conv(Math.max(0,+t.value||0),I,L));
+      d.querySelector('.rm').addEventListener('click',()=>{state.seasons.splice(idx,1);render()});
+      const snap=d.querySelector('.snap');
+      snap&&snap.addEventListener('click',()=>{
+        if(!info.inside.length){state.seasons.splice(idx,1)}else{
+          const rs=setToRanges(info.inside);Object.assign(p,rs[0]);
+          for(let k=1;k<rs.length;k++)state.seasons.push({...p,id:uid++,name:p.name+' ('+(k+1)+')',...rs[k],color:COLORS[state.seasons.length%COLORS.length]});
+        }render();
+      });
+      z.appendChild(d);
+    });
+    const add=document.createElement('button');add.className='btn-add';add.textContent='＋ Seizoensprijs toevoegen';
+    add.addEventListener('click',()=>{
+      state.seasons.push({id:uid++,name:'Season '+(state.seasons.length+1),sM:8,sD:1,eM:9,eD:31,rate:state.stdRate,tax:state.stdTax,color:COLORS[state.seasons.length%COLORS.length]});
+      render();
+    });
+    z.appendChild(add);
+  }
+
+  /* contiguous ranges (with wrap merge) from sorted day list */
+  function setToRanges(days){
+    const set=new Set(days),out=[];let cur=null;
+    for(let d=1;d<=365;d++){
+      if(set.has(d)){if(cur)cur.e=d;else cur={s:d,e:d}}
+      else if(cur){out.push(cur);cur=null}
+    }
+    cur&&out.push(cur);
+    if(out.length>1&&out[0].s===1&&out[out.length-1].e===365){const first=out.shift();out[out.length-1].e=first.e;out[out.length-1].wrap=true}
+    return out.map(r=>{const a=fromDOY(r.s),b=fromDOY(r.wrap?r.e:r.e);return{sM:a.m,sD:a.d,eM:b.m,eD:b.d}});
+  }
+
+  function renderConflicts(open){
+    const z=$('conflictZone');z.innerHTML='';
+    if(!state.seasonal)return;
+    for(const c of conflicts(open)){
+      const rs=setToRanges(c.days);
+      const rangeTxt=rs.map(r=>fmt(DOY(r.sM,r.sD))+' – '+fmt(DOY(r.eM,r.eD))).join(', ');
+      const d=document.createElement('div');d.className='conflict';
+      d.innerHTML='<h3>⚠ Twee prijzen overlappen</h3><p><b>'+c.a.name+'</b> and <b>'+c.b.name+'</b> dekken allebei '+rangeTxt+' ('+c.days.length+' nachten). Welke prijs geldt daar?</p>'+
+        '<div class="actions"><button class="ka">Behoud '+c.a.name+' ('+priceLabel(allIn(c.a.rate,c.a.tax))+')</button><button class="kb">Behoud '+c.b.name+' ('+priceLabel(allIn(c.b.rate,c.b.tax))+')</button></div>';
+      d.querySelector('.ka').addEventListener('click',()=>{trim(c.b,c.days);render()});
+      d.querySelector('.kb').addEventListener('click',()=>{trim(c.a,c.days);render()});
+      z.appendChild(d);
+    }
+  }
+  function trim(period,removeDays){
+    const open=openSet();
+    const rem=new Set(removeDays);
+    const keep=seasonInfo(period,open).all.filter(d=>!rem.has(d));
+    const idx=state.seasons.indexOf(period);
+    if(!keep.length){state.seasons.splice(idx,1);return}
+    const rs=setToRanges(keep);
+    Object.assign(period,rs[0]);
+    for(let k=1;k<rs.length;k++)state.seasons.splice(idx+k,0,{...period,id:uid++,name:period.name+' ('+(k+1)+')',...rs[k]});
+  }
+
+  function renderClosures(){
+    const z=$('closureList');z.innerHTML='';
+    if(!state.closures.length){z.innerHTML=''}
+    state.closures.forEach((c,idx)=>{
+      const exp=isVerlopen(c);
+      const d=document.createElement('div');d.className='ccard'+(exp?' expired':'');
+      const dr=fmtDate(c.from)+' – '+(c.unknown?'end date unknown':fmtDate(c.to));
+      d.innerHTML='<div class="ccard-top"><div><div class="t">'+(c.reason||'Tijdelijk gesloten')+'</div><div class="d">'+dr+'</div></div>'+
+        '<div style="display:flex;gap:6px;align-items:center"><span class="badge '+(exp?'exp':'auto')+'">'+(exp?'Verlopen':c.unknown?'Tot nader order':'Verloopt vanzelf')+'</span><button class="rm" aria-label="Sluiting verwijderen">✕</button></div></div>'+
+        (exp?'<div class="hint" style="margin-top:8px">Deze sluiting is voorbij en wordt automatisch verwijderd.</div>':
+         c.unknown?'<div class="hint" style="margin-top:8px">Camperaars zien the location as closed from '+fmtDate(c.from)+' until you set an end date or remove this closure.</div>':'');
+      d.querySelector('.rm').addEventListener('click',()=>{state.closures.splice(idx,1);render()});
+      z.appendChild(d);
+    });
+  }
+  const fmtDate=s=>{const[y,m,d]=s.split('-').map(Number);return d+' '+MN[m-1]+' '+y};
+
+  function renderTimeline(arr){
+    const z=$('timeline');z.innerHTML='';
+    const rs=runs(arr,v=>v.t+(v.p?v.p.id:'')+(v.c?v.c.id:''));
+    for(const r of rs){
+      const v=r.val,n=r.end-r.start+1;
+      const row=document.createElement('div');row.className='trow'+(v.t==='closed'||v.t==='tclose'?' dim':'');
+      let dot='var(--std-deep)',name='Standaardtarief',meta='',price='',unit='';
+      if(v.t==='closed'){dot='#C9D2CA';name='Gesloten';meta='Buiten openingsperiode'}
+      else if(v.t==='tclose'){dot='var(--tclose)';name='Tijdelijk gesloten';meta=(v.c.reason?v.c.reason+' · ':'')+(v.c.unknown?'tot nader order · stel een einddatum in zodra je die weet':'verloopt vanzelf')}
+      else if(v.t==='season'){dot=v.p.color;name=v.p.name;price=allIn(v.p.rate,v.p.tax)===0?'Free':money(allIn(v.p.rate,v.p.tax));unit='per nacht incl. belasting'}
+      else{price=allIn(state.stdRate,state.stdTax)===0?'Free':money(allIn(state.stdRate,state.stdTax));unit='per nacht incl. belasting'}
+      const unknownEnd=v.t==='tclose'&&v.c.unknown;
+      const rangeStr=unknownEnd?fmt(r.start)+' – tot nader order':fmt(r.start)+' – '+fmt(r.end)+' · '+n+' nachten';
+      row.innerHTML='<span class="tdot" style="background:'+dot+'"></span><div class="tt"><div class="n">'+name+'</div><div class="r">'+rangeStr+'</div>'+(meta?'<div class="m">'+meta+'</div>':'')+'</div>'+(price?'<div class="pr"><div class="v">'+price+'</div><div class="u">'+unit+'</div></div>':'');
+      z.appendChild(row);
+    }
+  }
+
+  function renderPriceCheck(arr){
+    const z=$('pcResult');
+    const val=$('pcDate').value;if(!val){z.innerHTML='';return}
+    const[y,m,dd]=val.split('-').map(Number);
+    const v=arr[DOY(m-1,Math.min(dd,ML[m-1]))];
+    let cls='open',st='Open',why='Standaardtarief',amt=priceLabel(allIn(state.stdRate,state.stdTax));
+    if(v.t==='closed'){cls='closed';st='Gesloten';why='Buiten de openingsperiode';amt=''}
+    else if(v.t==='tclose'){cls='closed';st='Tijdelijk gesloten';why=(v.c.reason||'Korte sluiting')+(v.c.unknown?' · tot further notice':' · tot '+fmtDate(v.c.to));amt=''}
+    else if(v.t==='season'){why=v.p.name;amt=priceLabel(allIn(v.p.rate,v.p.tax))}
+    z.innerHTML='<div class="pc-result '+cls+'"><div><div class="st">'+st+'</div><div class="why">'+why+'</div></div>'+(amt?'<div class="amt">'+amt+'</div>':'')+'</div>';
+  }
+
+  function renderSave(open){
+    const issues=[];
+    if(openingOverlapPairs()>0)issues.push('overlappende openingsperiodes');
+    if(state.seasonal){
+      const cf=conflicts(open).length;
+      if(cf)issues.push(cf+' prijsoverlap'+(cf>1?'s':''));
+      const outs=state.seasons.reduce((a,p)=>a+seasonInfo(p,open).outside,0);
+      if(outs)issues.push('een seizoensprijs buiten de openingsperiode');
+    }
+    const st=$('sbStatus'),btn=$('saveBtn');
+    if(issues.length){st.className='sb-status bad';st.textContent='Los op voor opslaan: '+issues.join(', ');btn.disabled=true}
+    else{st.className='sb-status ok';st.textContent='Klaar om op te slaan';btn.disabled=false}
+  }
+
+  /* ---------- events ---------- */
+  (function(){
+    /* populate override currency select */
+    const sel=$('ovrSel');for(const c in CCY){const o=document.createElement('option');o.value=c;o.textContent=c+' ('+CCY[c][0].trim()+')';sel.appendChild(o)}
+    sel.addEventListener('change',e=>{
+      state.localCcy=e.target.value;
+      state.ccyOverridden=state.localCcy!==state.countryCcy;
+      state.inputCcy=state.localCcy;
+      render();
+    });
+    $('ovrBtn').addEventListener('click',()=>{$('ovrBox').hidden=!$('ovrBox').hidden});
+    /* demo location switcher */
+    function setLoc(key){
+      state.loc=key;const P=PRESETS[key];
+      state.country=P.country;state.countryCcy=P.ccy;state.localCcy=P.ccy;state.ccyOverridden=false;state.inputCcy=P.ccy;
+      state.stdRate=P.std[0];state.stdTax=P.std[1];
+      if(state.seasons[0]){state.seasons[0].rate=P.season[0];state.seasons[0].tax=P.season[1]}
+      $('locNL').classList.toggle('on',key==='nl');$('locCH').classList.toggle('on',key==='ch');
+      $('ovrBox').hidden=true;
+      render();
+    }
+    $('locNL').addEventListener('click',()=>setLoc('nl'));
+    $('locCH').addEventListener('click',()=>setLoc('ch'));
+  })();
+  $('segAll').addEventListener('click',()=>{state.openAllYear=true;render()});
+  $('segPart').addEventListener('click',()=>{state.openAllYear=false;if(!state.openings.length)state.openings.push({id:uid++,sM:3,sD:1,eM:9,eD:31});render()});
+  $('stdRate').addEventListener('change',e=>{state.stdRate=conv(Math.max(0,+e.target.value||0),state.inputCcy,state.localCcy);render()});
+  $('stdTax').addEventListener('change',e=>{state.stdTax=conv(Math.max(0,+e.target.value||0),state.inputCcy,state.localCcy);render()});
+  $('seasonToggle').addEventListener('click',()=>{state.seasonal=!state.seasonal;render()});
+  $('btnAddClosure').addEventListener('click',()=>{$('closureForm').hidden=false;$('btnAddClosure').hidden=true;$('cFrom').value=TODAY});
+  $('cCancel').addEventListener('click',()=>{$('closureForm').hidden=true;$('btnAddClosure').hidden=false});
+  $('cUnknown').addEventListener('change',e=>{$('cTo').disabled=e.target.checked;$('cUnknownHint').hidden=!e.target.checked});
+  $('cSave').addEventListener('click',()=>{
+    const from=$('cFrom').value;if(!from)return;
+    const unknown=$('cUnknown').checked;
+    let to=$('cTo').value;
+    if(!unknown&&(!to||to<from))to=from;
+    state.closures.push({id:uid++,from,to:unknown?null:to,unknown,reason:$('cReason').value.trim()});
+    $('closureForm').hidden=true;$('btnAddClosure').hidden=false;$('cReason').value='';$('cTo').value='';$('cUnknown').checked=false;$('cTo').disabled=false;
+    render();
+  });
+  $('pcDate').addEventListener('change',render);
+  $('saveBtn').addEventListener('click',()=>{
+    const t=$('toast');t.hidden=false;
+    clearTimeout(t._tm);t._tm=setTimeout(()=>{t.hidden=true},2600);
+  });
+
+  /* move the year-at-a-glance card: sticky top bar on mobile, sidebar top on desktop */
+  const glanceEl=document.querySelector('.glance'),mainEl=document.querySelector('.main'),dock=$('glanceDock');
+  const mq=matchMedia('(min-width:1024px)');
+  function placeGlance(){mq.matches?dock.appendChild(glanceEl):mainEl.parentNode.insertBefore(glanceEl,mainEl)}
+  placeGlance();mq.addEventListener('change',placeGlance);
+
+  render();
+})();
+</script>
+</body>
+</html>

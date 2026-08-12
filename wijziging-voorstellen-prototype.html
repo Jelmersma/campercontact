@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wijziging doorgeven – Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#123F3D; --ink-soft:#3E5F5A; --muted:#7C8E8B;
+    --bg:#FFFFFF; --card:#FFFFFF; --line:#E4E9E6;
+    --green:#2E7D52; --green-dark:#1F5F3C; --green-soft:#EAF4EE;
+    --std:#9FCDA9; --closed:#DDE3DE; --tclose:#C4534A;
+    --warn-bg:#FDF6E3; --warn-line:#E8C860; --warn-ink:#7A5B0D;
+    --err:#B3362C; --err-bg:#FBEAE8;
+    --season:#E9A23B;
+    --radius:16px; --radius-sm:10px;
+    --shadow:0 1px 2px rgba(18,63,61,.04);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:16px;line-height:1.45}
+  .wrap{max-width:560px;margin:0 auto;padding:20px 16px 80px}
+
+  header.page{padding:8px 2px 16px}
+  .loc-chip{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--ink-soft);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 12px;margin-bottom:12px}
+  .loc-chip .dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+  h1{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+  .sub{color:var(--muted);font-size:14.5px;margin-top:6px;max-width:46ch}
+
+  section.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 16px;margin-top:16px}
+  .eyebrow{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  h2{font-size:18px;font-weight:700;letter-spacing:-.01em;margin-top:4px}
+
+  /* current app info strip */
+  .now{display:flex;gap:12px;align-items:center;background:var(--green-soft);border-radius:var(--radius-sm);padding:12px 13px;margin-top:12px}
+  .now .ico{font-size:20px}
+  .now .t{font-size:13px;font-weight:600;color:var(--green-dark)}
+  .now .v{font-size:14.5px;font-weight:700;color:var(--green-dark)}
+
+  /* option cards */
+  .opts{display:grid;gap:10px;margin-top:14px}
+  .opt{display:flex;gap:12px;align-items:flex-start;text-align:left;border:1.5px solid var(--line);background:var(--card);border-radius:14px;padding:14px 13px;cursor:pointer;font:inherit;transition:border-color .12s, background .12s;min-height:64px}
+  .opt:hover{border-color:#BFD2C4}
+  .opt.on{border-color:var(--green);background:var(--green-soft)}
+  .opt .ico{flex:none;width:38px;height:38px;border-radius:11px;background:var(--green-soft);display:grid;place-items:center;font-size:18px}
+  .opt.on .ico{background:#fff}
+  .opt .t{font-weight:700;font-size:15px}
+  .opt .d{font-size:13px;color:var(--muted);margin-top:2px}
+
+  .field-label{font-size:13px;font-weight:600;color:var(--ink-soft);margin:15px 0 6px;display:block}
+  .hint{font-size:12.5px;color:var(--muted);font-weight:400}
+  input,select{font:inherit;font-size:15px;color:var(--ink);border:1px solid var(--line);border-radius:14px;background:#FFFFFF;padding:10px 12px;min-height:46px}
+  input:focus,select:focus{outline:2px solid var(--green);outline-offset:1px;border-color:var(--green)}
+  input[type=date]{width:100%}
+  input[type=text]{width:100%}
+  input.money{width:110px;text-align:right}
+  select.day{width:74px} select.month{width:118px}
+  .money-row{display:flex;align-items:center;gap:10px}
+  .money-row .cur{font-size:14px;font-weight:600;color:var(--muted)}
+  .range-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .range-row .arrow{color:var(--muted)}
+
+  /* app-says feedback box */
+  .appsays{border-radius:var(--radius-sm);padding:11px 13px;margin-top:10px;font-size:13.5px;display:flex;gap:9px;align-items:flex-start}
+  .appsays.open{background:var(--green-soft);color:var(--green-dark)}
+  .appsays.closed{background:var(--err-bg);color:var(--err)}
+  .appsays.warn{background:var(--warn-bg);color:var(--warn-ink)}
+  .appsays b{font-weight:700}
+  .appsays .redirect{margin-top:5px;font-size:12.5px}
+  .appsays .redirect button{border:0;background:none;font:inherit;font-weight:700;color:inherit;text-decoration:underline;cursor:pointer;padding:0}
+
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+  .chipbtn{border:1.5px solid var(--line);background:var(--card);font:inherit;font-size:13.5px;font-weight:600;color:var(--ink-soft);border-radius:999px;padding:9px 15px;cursor:pointer;min-height:42px}
+  .chipbtn.on{border-color:var(--green);background:var(--green-soft);color:var(--green-dark)}
+
+  .checkline{display:flex;align-items:center;gap:9px;margin-top:10px;font-size:14px;color:var(--ink-soft)}
+  .checkline input{width:19px;height:19px;accent-color:var(--green);min-height:0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .linklike{border:0;background:none;font:inherit;font-size:12.5px;font-weight:700;color:var(--green-dark);text-decoration:underline;cursor:pointer;padding:8px 0 0;display:block}
+  .convline{font-size:12.5px;font-weight:600;color:var(--green-dark);margin-top:7px}
+  .convline .sub{display:block;font-weight:400;color:var(--muted);margin-top:2px}
+
+  .btn-primary{display:block;width:100%;border:0;background:var(--green);color:#fff;font:inherit;font-weight:700;font-size:15.5px;border-radius:13px;padding:15px;cursor:pointer;margin-top:18px;min-height:52px}
+  .btn-primary:hover{background:var(--green-dark)}
+  .btn-primary:disabled{background:#C7D6CC;cursor:not-allowed}
+  .btn-ghost{border:0;background:transparent;color:var(--green-dark);font:inherit;font-weight:700;font-size:14px;padding:12px;cursor:pointer;display:block;margin:10px auto 0}
+
+  /* confirmation */
+  .confirm{text-align:center;padding:8px 4px}
+  .confirm .big{width:58px;height:58px;border-radius:50%;background:var(--green-soft);display:grid;place-items:center;font-size:26px;margin:6px auto 14px}
+  .confirm h2{font-size:20px}
+  .confirm p{font-size:14px;color:var(--ink-soft);margin-top:8px;max-width:40ch;margin-left:auto;margin-right:auto}
+  .confirm .steps{text-align:left;margin-top:16px;border-top:1px solid var(--line);padding-top:6px}
+  .cstep{display:flex;gap:11px;padding:10px 2px;font-size:13.5px;color:var(--ink-soft)}
+  .cstep .n{flex:none;width:22px;height:22px;border-radius:50%;background:var(--green-soft);color:var(--green-dark);font-size:12px;font-weight:700;display:grid;place-items:center;margin-top:1px}
+
+  /* moderation preview */
+  details.mod{margin-top:16px}
+  details.mod summary{list-style:none;cursor:pointer;background:var(--ink);color:#EAF3EE;border-radius:var(--radius);padding:15px 16px;display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:15px}
+  details.mod summary::-webkit-details-marker{display:none}
+  details.mod summary .arr{transition:transform .15s;font-size:13px}
+  details.mod[open] summary{border-radius:var(--radius) var(--radius) 0 0}
+  details.mod[open] summary .arr{transform:rotate(180deg)}
+  .modbody{background:#1A4A44;border-radius:0 0 var(--radius) var(--radius);padding:16px;color:#D7E6DF}
+  .modhint{font-size:12.5px;color:#9DBBAF;margin-bottom:12px}
+  .obs{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:13px}
+  .obs .k{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#9DBBAF}
+  .obs .v{font-size:14px;margin-top:4px;white-space:pre-line}
+  .obs .v b{color:#fff}
+  .obs + .obs{margin-top:10px}
+  .vs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+  @media(max-width:420px){.vs{grid-template-columns:1fr}}
+  .vs .obs.rep{border-color:rgba(233,162,59,.5)}
+  .actions-mod{margin-top:12px}
+  .actions-mod .k{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#9DBBAF;margin-bottom:8px}
+  .modact{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:#EAF3EE;font:inherit;font-size:13.5px;font-weight:600;border-radius:10px;padding:11px 12px;cursor:pointer;margin-top:7px}
+  .modact:hover{background:rgba(255,255,255,.1)}
+  .modact .tag{flex:none;font-size:10px;font-weight:800;letter-spacing:.06em;border-radius:5px;padding:3px 7px}
+  .modact .tag.one{background:rgba(63,164,140,.25);color:#8FE0C8}
+  .modact .tag.ask{background:rgba(233,162,59,.22);color:#F3CE8F}
+  .modnote{font-size:12px;color:#9DBBAF;margin-top:10px}
+
+  /* mini year bar */
+  .mini{margin-top:8px}
+  .mini .mb{display:flex;height:14px;border-radius:5px;overflow:hidden;border:1px solid rgba(255,255,255,.14)}
+  .mini .mb .sg{height:100%}
+  .mini .lbl{font-size:11px;color:#9DBBAF;margin-bottom:4px;margin-top:8px}
+  .sg.op{background:var(--std)} .sg.cl{background:repeating-linear-gradient(135deg,#3A605A 0 4px,#2C534D 4px 8px)}
+
+  .modact.reject{border-color:rgba(217,109,90,.45);color:#F3B0A3}
+  .modact.reject:hover{background:rgba(217,109,90,.14)}
+  .rejected-banner{background:rgba(217,109,90,.18);border:1px solid rgba(217,109,90,.4);border-radius:10px;padding:11px 13px;font-size:13px;color:#F3B0A3;margin-bottom:12px}
+  .rejected-banner b{color:#fff}
+  .overlay{position:fixed;inset:0;background:rgba(10,34,31,.55);display:grid;place-items:center;padding:20px;z-index:100}
+  .dialog{background:#fff;border-radius:18px;padding:20px 18px;width:100%;max-width:430px;box-shadow:0 18px 50px rgba(10,34,31,.3)}
+  .dialog h3{font-size:18px;font-weight:700;color:var(--ink)}
+  .dialog .dsub{font-size:13px;color:var(--muted);margin-top:4px}
+  .dialog textarea{width:100%;font:inherit;font-size:14.5px;color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:11px 12px;min-height:88px;margin-top:6px;resize:vertical}
+  .dialog textarea:focus{outline:2px solid var(--green);border-color:var(--green)}
+  .dlg-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+  .btn-danger{border:0;background:#C4534A;color:#fff;font:inherit;font-weight:700;font-size:14.5px;border-radius:12px;padding:12px 20px;cursor:pointer;min-height:46px}
+  .btn-danger:disabled{background:#E0B4AF;cursor:not-allowed}
+  .btn-danger:hover:not(:disabled){background:#A83E36}
+  footer{margin-top:26px;text-align:center;font-size:12px;color:var(--muted)}
+  [hidden]{display:none!important}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <span class="loc-chip"><span class="dot"></span> Camperplaats De Reigershorst · 98328</span>
+    <h1>Klopt er iets niet?</h1>
+    <p class="sub">Bedankt voor je hulp. Vertel wat je ter plekke zag, meer hoeven we niet. Een moderator pakt het daarna op.</p>
+  </header>
+
+  <div id="flow">
+    <!-- STEP 1 -->
+    <section class="card">
+      <span class="eyebrow">Stap 1 van 2</span>
+      <h2>Wat viel je op?</h2>
+      <div class="opts" id="opts">
+        <button class="opt" data-type="price"><span class="ico">💶</span><span><span class="t">De prijs was anders</span><span class="d" style="display:block">Je betaalde meer of minder dan de app aangeeft</span></span></button>
+        <button class="opt" data-type="open"><span class="ico">🔓</span><span><span class="t">Het was open</span><span class="d" style="display:block">Maar de app zegt gesloten</span></span></button>
+        <button class="opt" data-type="closedNow"><span class="ico">🚧</span><span><span class="t">Het was gesloten</span><span class="d" style="display:block">Maar de app zegt open</span></span></button>
+        <button class="opt" data-type="season"><span class="ico">📅</span><span><span class="t">Het openingsseizoen klopt niet</span><span class="d" style="display:block">Gaat eerder open of later dicht dan getoond</span></span></button>
+      </div>
+    </section>
+
+    <!-- STEP 2 -->
+    <section class="card" id="step2" hidden>
+      <span class="eyebrow">Stap 2 van 2</span>
+      <div id="panel"></div>
+      <button class="btn-primary" id="submit">Naar moderatie sturen</button>
+    </section>
+  </div>
+
+  <!-- CONFIRMATION -->
+  <section class="card confirm" id="done" hidden>
+    <div class="big">✓</div>
+    <h2>Bedankt, je melding staat erin</h2>
+    <p id="doneSummary"></p>
+    <div class="steps">
+      <div class="cstep"><span class="n">1</span><span>Een moderator vergelijkt je melding met de huidige gegevens en de info van de host.</span></div>
+      <div class="cstep"><span class="n">2</span><span>Klopt het, dan worden de gegevens aangepast. Je hoeft zelf nooit periodes of prijstabellen te bewerken.</span></div>
+      <div class="cstep"><span class="n">3</span><span>Je krijgt een melding zodra het verwerkt is.</span></div>
+    </div>
+    <button class="btn-ghost" id="again">Iets anders melden</button>
+  </section>
+
+  <!-- MODERATION PREVIEW -->
+  <details class="mod" id="modWrap" hidden>
+    <summary>Zo komt dit binnen bij moderatie <span class="arr">▼</span></summary>
+    <div class="modbody">
+      <p class="modhint">De camperaar bewerkt nooit het datamodel. De melding komt binnen als waarneming naast de huidige gegevens, met één-klik acties in plaats van handmatig herstel.</p>
+      <div id="modBody"></div>
+    </div>
+  </details>
+
+  <footer>Prototype · meldflow voor camperaars · hoort bij het host-editor-prototype</footer>
+</div>
+
+<!-- REJECT MODAL -->
+<div class="overlay" id="rejectOverlay" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="rejTitle">
+    <h3 id="rejTitle">Deze melding afwijzen</h3>
+    <p class="dsub">Kies een reden. De melder ziet die, dus houd het duidelijk en vriendelijk.</p>
+    <div class="chips" id="rejChips" style="margin-top:12px">
+      <button class="chipbtn" data-c="Kon niet ter plekke of online verifiëren">Kon niet verifiëren</button>
+      <button class="chipbtn" data-c="Botst met door de host bevestigde informatie">Botst met info van host</button>
+      <button class="chipbtn" data-c="Al gemeld en verwerkt">Dubbele melding</button>
+      <button class="chipbtn" data-c="Other">Anders</button>
+    </div>
+    <label class="field-label">Bericht aan de melder <span class="hint">· verplicht</span></label>
+    <textarea id="rejText" placeholder="bijv. We hebben het op 12 aug bij de host nagevraagd: het hoogseizoentarief van €27,40 klopt."></textarea>
+    <div class="dlg-actions">
+      <button class="btn-ghost" id="rejCancel">Cancel</button>
+      <button class="btn-danger" id="rejConfirm" disabled>Melding afwijzen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  /* ---------- current live data for this location (as set by the host) ---------- */
+  const ML=[31,28,31,30,31,30,31,31,30,31,30,31];
+  const MN=['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+  const CUM=[0];for(let i=0;i<12;i++)CUM.push(CUM[i]+ML[i]);
+  const DOY=(m,d)=>CUM[m]+d;
+  const money=v=>'€'+v.toFixed(2).replace('.',',');
+  /* lokale valuta van de locatie is EUR (NL). Camperaar kan in een andere valuta betaald hebben. */
+  const LOCAL='EUR';
+  const RATES={EUR:1,GBP:0.85,CHF:0.94,USD:1.16,DKK:7.46,NOK:11.4,SEK:11.2,PLN:4.27,CZK:24.6,HUF:395,CAD:1.58,AUD:1.75,NZD:1.90};
+  const SYM={EUR:'€',GBP:'£',CHF:'CHF ',USD:'$',DKK:'kr ',NOK:'kr ',SEK:'kr ',PLN:'zł ',CZK:'Kč ',HUF:'Ft ',CAD:'C$',AUD:'A$',NZD:'NZ$'};
+  const conv=(v,f,t)=>Math.round(v/RATES[f]*RATES[t]*100)/100;
+  const payFmt=v=>SYM[report.payCcy]+v.toFixed(2).replace('.',',');
+  const paidLocal=()=>conv(report.paid,report.payCcy,LOCAL);
+  const CUR={
+    opening:{sM:3,sD:1,eM:9,eD:31},                       /* 1 apr – 31 okt */
+    std:{rate:15.00,tax:1.70},
+    season:{name:'Hoogseizoen',sM:6,sD:1,eM:7,eD:31,rate:22.50,tax:2.45},
+    closure:{from:'2026-09-12',to:'2026-09-19',reason:'Lokaal festival'}
+  };
+  const allIn=p=>p.rate+2*p.tax;
+  const openingTxt='1 apr – 31 okt';
+
+  function appFor(dateStr){
+    if(!dateStr)return null;
+    const[y,m,d]=dateStr.split('-').map(Number);
+    const doy=DOY(m-1,Math.min(d,ML[m-1]));
+    if(y===2026&&dateStr>=CUR.closure.from&&dateStr<=CUR.closure.to)
+      return{status:'tclosed',label:'Tijdelijk gesloten · '+CUR.closure.reason};
+    const inOpen=doy>=DOY(CUR.opening.sM,CUR.opening.sD)&&doy<=DOY(CUR.opening.eM,CUR.opening.eD);
+    if(!inOpen)return{status:'closed',label:'Gesloten · buiten openingsperiode ('+openingTxt+')'};
+    const inSeason=doy>=DOY(CUR.season.sM,CUR.season.sD)&&doy<=DOY(CUR.season.eM,CUR.season.eD);
+    const p=inSeason?CUR.season:CUR.std;
+    return{status:'open',period:inSeason?CUR.season.name:'Standaardtarief',price:allIn(p),label:money(allIn(p))+'/nacht ('+(inSeason?CUR.season.name:'Standaardtarief')+', incl. belasting voor 2)'};
+  }
+  const fmtD=s=>{const[y,m,d]=s.split('-').map(Number);return d+' '+MN[m-1]+' '+y};
+  const fmtShort=s=>{const[y,m,d]=s.split('-').map(Number);return d+' '+MN[m-1]};
+  function stayList(){
+    if(!report.date)return[];
+    const end=(report.dateTo&&report.dateTo>=report.date)?report.dateTo:report.date;
+    const out=[];let cur=new Date(report.date+'T00:00:00Z');const stop=new Date(end+'T00:00:00Z');let i=0;
+    while(cur<=stop&&i<31){out.push(cur.toISOString().slice(0,10));cur=new Date(cur.getTime()+86400000);i++}
+    return out;
+  }
+  function stayRuns(){
+    const runs=[];
+    for(const ds of stayList()){
+      const a=appFor(ds);
+      const key=a.status+(a.status==='open'?a.period+a.price:'');
+      if(runs.length&&runs[runs.length-1].key===key)runs[runs.length-1].to=ds;
+      else runs.push({key,from:ds,to:ds,a});
+    }
+    return runs;
+  }
+  const runTxt=r=>fmtShort(r.from)+(r.to!==r.from?' – '+fmtShort(r.to):'');
+  const rangeTxt=()=>{
+    const l=stayList();
+    if(l.length<=1)return fmtD(report.date);
+    return fmtShort(l[0])+' – '+fmtD(l[l.length-1])+' ('+l.length+' nights)';
+  };
+
+  /* ---------- state ---------- */
+  const $=id=>document.getElementById(id);
+  const report={type:null,rejected:null,date:'2026-08-05',dateTo:'',paid:14.00,payCcy:'EUR',basis:null,reason:null,until:'',untilUnknown:false,note:'',propSM:2,propSD:15,propEM:10,propED:15};
+
+  /* ---------- step 1 ---------- */
+  document.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('.opt').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    report.type=b.dataset.type;report.rejected=null;
+    /* sensible demo defaults per type */
+    if(report.type==='price')report.date='2026-08-05';
+    if(report.type==='open')report.date='2026-11-14';
+    if(report.type==='closedNow'){report.date='2026-06-13';report.reason=null;report.until='';report.untilUnknown=false}
+    $('step2').hidden=false;$('modWrap').hidden=false;
+    renderPanel();
+    $('step2').scrollIntoView({behavior:'smooth',block:'start'});
+  }));
+
+  /* ---------- step 2 panels ---------- */
+  const daySel=(v,id)=>{let h='<select class="day" id="'+id+'" aria-label="Dag">';for(let d=1;d<=31;d++)h+='<option '+(d===v?'selected':'')+'>'+d+'</option>';return h+'</select>'};
+  const monSel=(v,id)=>{let h='<select class="month" id="'+id+'" aria-label="Month">';MN.forEach((m,i)=>h+='<option value="'+i+'" '+(i===v?'selected':'')+'>'+m+'</option>');return h+'</select>'};
+
+  function appSaysBox(){
+    const rs=stayRuns();
+    if(!rs.length)return'';
+    const multi=stayList().length>1,dw=multi?'deze data':'deze datum';
+    /* mixed states or prices across the stay: show the breakdown */
+    if(rs.length>1){
+      const lines=rs.map(r=>runTxt(r)+': '+(r.a.status==='open'?'<b>'+money(r.a.price)+'</b> ('+r.a.period+')':'<b>'+(r.a.status==='tclosed'?'tijdelijk gesloten':'gesloten')+'</b>')).join('<br>');
+      return'<div class="appsays warn">📱 <span>Je verblijf valt in verschillende periodes in de app:<br>'+lines+'</span></div>';
+    }
+    const a=rs[0].a;
+    if(report.type==='price'){
+      if(a.status!=='open')return'<div class="appsays warn">ℹ️ <span>De app toont '+dw+' als <b>'+(a.status==='tclosed'?'tijdelijk gesloten':'gesloten')+'</b>.<span class="redirect" style="display:block">Was je er en was het open? <button id="redirOpen">Meld in plaats daarvan "het was open"</button></span></span></div>';
+      return'<div class="appsays open">📱 <span>De app toont nu <b>'+a.label+'</b> voor '+dw+'.</span></div>';
+    }
+    if(report.type==='open'){
+      if(a.status==='open')return'<div class="appsays open">📱 <span>De app toont '+dw+' al als <b>open</b> ('+a.label+'). Kies de data waarop je werd weggestuurd, of meld anders een prijsverschil.</span></div>';
+      return'<div class="appsays closed">📱 <span>De app toont '+dw+' als <b>'+(a.status==='tclosed'?'tijdelijk gesloten · '+CUR.closure.reason:'gesloten, buiten openingsperiode '+openingTxt)+'</b>.</span></div>';
+    }
+    if(report.type==='closedNow'){
+      if(a.status!=='open')return'<div class="appsays warn">ℹ️ <span>De app toont '+dw+' al als <b>'+(a.status==='tclosed'?'tijdelijk gesloten':'gesloten')+'</b>. Misschien is het al gemeld.</span></div>';
+      return'<div class="appsays open">📱 <span>De app toont '+dw+' als <b>open</b> ('+a.label+').</span></div>';
+    }
+    return'';
+  }
+
+  function renderPanel(){
+    const p=$('panel');
+    if(report.type==='price'){
+      p.innerHTML='<h2>De prijs was anders</h2>'+
+      '<label class="field-label">Wanneer verbleef je?</label>'+
+      '<div class="grid2">'+
+        '<div><input type="date" id="rDate" min="2026-01-01" max="2026-12-31" value="'+report.date+'" aria-label="Eerste nacht"><div class="hint" style="margin-top:4px">Eerste nacht</div></div>'+
+        '<div><input type="date" id="rDateTo" min="2026-01-01" max="2026-12-31" value="'+report.dateTo+'" aria-label="Laatste nacht"><div class="hint" style="margin-top:4px">Laatste nacht · optioneel</div></div>'+
+      '</div>'+
+      '<div id="appsays">'+appSaysBox()+'</div>'+
+      '<label class="field-label">Wat betaalde je per nacht? <span class="hint">· totaal, voor 2 personen</span></label>'+
+      '<div class="money-row"><span class="cur" id="payCur">'+(report.payCcy||'EUR')+'</span><input type="number" class="money" id="rPaid" min="0" step="0.5" value="'+report.paid+'" inputmode="decimal"></div>'+
+      '<button class="linklike" id="otherCcy">'+(report.payCcy&&report.payCcy!=='EUR'?'Toch in EUR betaald':'Ik betaalde in een andere valuta')+'</button>'+
+      '<div id="ccyRow" '+(report.payCcy&&report.payCcy!=='EUR'?'':'hidden')+' style="margin-top:8px">'+
+        '<select id="payCcySel" style="width:190px"></select>'+
+        '<div class="convline" id="convLine"></div>'+
+      '</div>'+
+      '<label class="checkline"><input type="checkbox" id="rFree" '+(report.paid===0?'checked':'')+'> Het was gratis</label>'+
+      '<label class="field-label">Nog iets? <span class="hint">· optioneel</span></label>'+
+      '<input type="text" id="rNote" placeholder="bijv. prijsbord bij de ingang zei €14" value="'+report.note.replace(/"/g,'&quot;')+'">';
+    }
+    if(report.type==='open'){
+      p.innerHTML='<h2>Het was open, maar de app zegt gesloten</h2>'+
+      '<label class="field-label">Wanneer was je er?</label>'+
+      '<div class="grid2">'+
+        '<div><input type="date" id="rDate" min="2026-01-01" max="2026-12-31" value="'+report.date+'" aria-label="Vanaf"><div class="hint" style="margin-top:4px">From</div></div>'+
+        '<div><input type="date" id="rDateTo" min="2026-01-01" max="2026-12-31" value="'+report.dateTo+'" aria-label="Tot"><div class="hint" style="margin-top:4px">Tot · optioneel</div></div>'+
+      '</div>'+
+      '<div id="appsays">'+appSaysBox()+'</div>'+
+      '<label class="field-label">Hoe weet je dat het open was?</label>'+
+      '<div class="chips" id="basisChips">'+
+        ['Ik heb hier overnacht','Ik reed er langs','Ik belde de host'].map(c=>'<button class="chipbtn'+(report.basis===c?' on':'')+'" data-c="'+c+'">'+c+'</button>').join('')+
+      '</div>'+
+      '<label class="field-label">Nog iets? <span class="hint">· optioneel</span></label>'+
+      '<input type="text" id="rNote" placeholder="bijv. host zegt dat ze nu het hele jaar open zijn" value="'+report.note.replace(/"/g,'&quot;')+'">';
+    }
+    if(report.type==='closedNow'){
+      p.innerHTML='<h2>Het was gesloten, maar de app zegt open</h2>'+
+      '<label class="field-label">Wanneer was je er?</label>'+
+      '<div class="grid2">'+
+        '<div><input type="date" id="rDate" min="2026-01-01" max="2026-12-31" value="'+report.date+'" aria-label="Vanaf"><div class="hint" style="margin-top:4px">From</div></div>'+
+        '<div><input type="date" id="rDateTo" min="2026-01-01" max="2026-12-31" value="'+report.dateTo+'" aria-label="Tot"><div class="hint" style="margin-top:4px">Tot · optioneel</div></div>'+
+      '</div>'+
+      '<div id="appsays">'+appSaysBox()+'</div>'+
+      '<label class="field-label">Weet je waarom?</label>'+
+      '<div class="chips" id="reasonChips">'+
+        ['Evenement of festival','Onderhoud of werkzaamheden','Geen idee'].map(c=>'<button class="chipbtn'+(report.reason===c?' on':'')+'" data-c="'+c+'">'+c+'</button>').join('')+
+      '</div>'+
+      '<label class="field-label">Gesloten tot? <span class="hint">· als je het weet</span></label>'+
+      '<input type="date" id="rUntil" min="2026-01-01" max="2027-12-31" value="'+report.until+'" '+(report.untilUnknown?'disabled':'')+'>'+
+      '<label class="checkline"><input type="checkbox" id="rUnknown" '+(report.untilUnknown?'checked':'')+'> Geen idee tot wanneer</label>'+
+      '<label class="field-label">Nog iets? <span class="hint">· optioneel</span></label>'+
+      '<input type="text" id="rNote" placeholder="bijv. bord zei gesloten wegens kermis" value="'+report.note.replace(/"/g,'&quot;')+'">';
+    }
+    if(report.type==='season'){
+      p.innerHTML='<h2>Het openingsseizoen klopt niet</h2>'+
+      '<div class="appsays open" style="margin-top:12px">📱 <span>De app toont nu: open <b>'+openingTxt+'</b>.</span></div>'+
+      '<label class="field-label">Wat zou het volgens jou moeten zijn?</label>'+
+      '<div class="range-row">'+daySel(report.propSD,'pSD')+monSel(report.propSM,'pSM')+'<span class="arrow">→</span>'+daySel(report.propED,'pED')+monSel(report.propEM,'pEM')+'</div>'+
+      '<label class="field-label">Hoe weet je dat? <span class="hint">· optioneel maar helpt enorm</span></label>'+
+      '<input type="text" id="rNote" placeholder="bijv. hun website zegt open vanaf 15 maart" value="'+report.note.replace(/"/g,'&quot;')+'">';
+    }
+    bindPanel();
+    renderMod();
+  }
+
+  function bindPanel(){
+    const d=$('rDate');d&&d.addEventListener('change',e=>{report.date=e.target.value;$('appsays').innerHTML=appSaysBox();bindRedirect();renderMod()});
+    const dt=$('rDateTo');dt&&dt.addEventListener('change',e=>{report.dateTo=e.target.value;$('appsays').innerHTML=appSaysBox();bindRedirect();renderMod()});
+    bindRedirect();
+    const paid=$('rPaid');paid&&paid.addEventListener('change',e=>{report.paid=Math.max(0,+e.target.value||0);updateConv();renderMod()});
+    const oc=$('otherCcy');
+    if(oc){
+      const sel=$('payCcySel');
+      for(const c in SYM){const o=document.createElement('option');o.value=c;o.textContent=c+' ('+SYM[c].trim()+')';sel.appendChild(o)}
+      sel.value=report.payCcy==='EUR'?'GBP':report.payCcy;
+      oc.addEventListener('click',()=>{report.payCcy=report.payCcy==='EUR'?sel.value:'EUR';renderPanel()});
+      sel.addEventListener('change',e=>{report.payCcy=e.target.value;$('payCur').textContent=report.payCcy;updateConv();renderMod()});
+      updateConv();
+    }
+    const free=$('rFree');free&&free.addEventListener('change',e=>{if(e.target.checked){report.paid=0;$('rPaid').value=0}renderMod()});
+    const note=$('rNote');note&&note.addEventListener('input',e=>{report.note=e.target.value;renderMod()});
+    const bc=$('basisChips');bc&&bc.querySelectorAll('.chipbtn').forEach(b=>b.addEventListener('click',()=>{report.basis=b.dataset.c;bc.querySelectorAll('.chipbtn').forEach(x=>x.classList.toggle('on',x===b));renderMod()}));
+    const rc=$('reasonChips');rc&&rc.querySelectorAll('.chipbtn').forEach(b=>b.addEventListener('click',()=>{report.reason=b.dataset.c;rc.querySelectorAll('.chipbtn').forEach(x=>x.classList.toggle('on',x===b));renderMod()}));
+    const un=$('rUnknown');un&&un.addEventListener('change',e=>{report.untilUnknown=e.target.checked;$('rUntil').disabled=e.target.checked;renderMod()});
+    const ut=$('rUntil');ut&&ut.addEventListener('change',e=>{report.until=e.target.value;renderMod()});
+    ['pSD','pSM','pED','pEM'].forEach(id=>{const el=$(id);el&&el.addEventListener('change',()=>{
+      report.propSD=+$('pSD').value;report.propSM=+$('pSM').value;report.propED=+$('pED').value;report.propEM=+$('pEM').value;renderMod();
+    })});
+  }
+  function updateConv(){
+    const cl=$('convLine');if(!cl)return;
+    if(report.payCcy==='EUR'){cl.textContent='';return}
+    cl.innerHTML='≈ '+money(paidLocal())+' shown in the location\'s currency<span class="sub">Indicatieve koers · your bank\'s card rate may differ slightly</span>';
+  }
+  function bindRedirect(){
+    const r=$('redirOpen');
+    r&&r.addEventListener('click',()=>{document.querySelector('.opt[data-type=open]').click()});
+  }
+
+  /* ---------- moderation preview ---------- */
+  function miniBar(sM,sD,eM,eD){
+    const s=DOY(sM,sD),e=DOY(eM,eD);
+    const segs=s<=e?[[1,s-1,'cl'],[s,e,'op'],[e+1,365,'cl']]:[[1,e,'op'],[e+1,s-1,'cl'],[s,365,'op']];
+    return'<div class="mb">'+segs.filter(x=>x[1]>=x[0]).map(x=>'<span class="sg '+x[2]+'" style="width:'+(((x[1]-x[0]+1)/365)*100)+'%"></span>').join('')+'</div>';
+  }
+  function renderMod(){
+    const z=$('modBody');if(!report.type){z.innerHTML='';return}
+    const a=appFor(report.date);
+    let obs='',cur='',acts='',note='';
+    if(report.type==='price'){
+      const foreign=report.payCcy!=='EUR';
+      const rs=stayRuns();
+      obs='<b>Camperaar betaalde '+(report.paid===0?'niets (gratis)':payFmt(report.paid))+'</b> per nacht op <b>'+rangeTxt()+'</b>'+
+          (foreign?'\n≈ '+money(paidLocal())+' · indicatieve koers, kaartkoersen kunnen afwijken':'')+
+          (report.note?'\n“'+report.note+'”':'');
+      cur=rs.length>1
+        ?rs.map(r=>runTxt(r)+': '+(r.a.status==='open'?'<b>'+money(r.a.price)+'</b> ('+r.a.period+')':'<b>gesloten</b>')).join('\n')
+        :(a&&a.status==='open'?'App toont <b>'+money(a.price)+'</b>/nacht\n('+a.period+(a.period===CUR.season.name?' · 1 jul – 31 aug':' · rest van de openingsperiode')+')':'App toont <b>gesloten</b> op deze data');
+      if(rs.length===1&&rs[0].a.status==='open'){
+        const inSeason=rs[0].a.period===CUR.season.name;
+        acts='<button class="modact"><span class="tag one">1-KLIK</span> Werk '+(inSeason?CUR.season.name+' (1 jul – 31 aug)':'standaardtarief')+' bij naar '+(report.paid===0?'Gratis':money(paidLocal()))+' all-in</button>'+
+             '<button class="modact"><span class="tag ask">CHECK</span> Vraag host de huidige prijs te bevestigen</button>';
+      }else{
+        const names=[...new Set(rs.filter(r=>r.a.status==='open').map(r=>r.a.period))];
+        acts='<button class="modact"><span class="tag ask">CHECK</span> Verblijf valt in '+(names.length?names.join(' en '):'gesloten data')+' · check welke prijs afwijkt voor je aanpast</button>'+
+             '<button class="modact"><span class="tag ask">CHECK</span> Vraag host de huidige prijs te bevestigen</button>';
+      }
+      note='De prijs geldt voor de <b>bestaande</b> periode en blijft in de valuta van de locatie (EUR). Er ontstaat geen nieuwe miniperiode, dus achteraf niets te herstellen.'+
+           (foreign?' De melding is gedaan in '+report.payCcy+'; het oorspronkelijke bedrag wordt naast de omrekening bewaard.':'');
+    }
+    if(report.type==='open'){
+      obs='<b>Open op '+rangeTxt()+'</b>'+(report.basis?'\nGrondslag: '+report.basis:'')+(report.note?'\n“'+report.note+'”':'');
+      cur='App toont <b>gesloten</b>\n(openingsperiode '+openingTxt+')';
+      acts='<button class="modact"><span class="tag ask">CHECK</span> Check host-website / neem contact op over de openingsperiode</button>'+
+           '<button class="modact"><span class="tag one">1-KLIK</span> Markeer openingsperiode als "mogelijk verouderd" op de detailpagina</button>';
+      note='Eén waarneming herschrijft het seizoen niet. Het markeert de openingsperiode voor verificatie, en camperaars zien intussen een actualiteitshint.';
+    }
+    if(report.type==='closedNow'){
+      const until=report.untilUnknown?'onbekend (gesloten tot nader order)':(report.until?fmtD(report.until):'einddatum niet opgegeven');
+      obs='<b>Gesloten op '+rangeTxt()+'</b>\nReden: '+(report.reason||'niet opgegeven')+'\nTot: '+until+(report.note?'\n“'+report.note+'”':'');
+      cur=a&&a.status==='open'?'App toont <b>open</b> ('+a.label+')':'App toont al gesloten';
+      const closeEnd=report.untilUnknown?' (tot nader order)':report.until?' tot '+fmtD(report.until):(report.dateTo&&report.dateTo>report.date?' tot '+fmtD(report.dateTo):'');
+      acts='<button class="modact"><span class="tag one">1-KLIK</span> Maak tijdelijke sluiting vanaf '+fmtD(report.date)+closeEnd+'</button>'+
+           '<button class="modact"><span class="tag ask">CHECK</span> Vraag host om bevestiging</button>';
+      note=report.untilUnknown
+        ?'Wordt een <b>tijdelijke sluiting</b> zonder einddatum: de locatie is gesloten tot de host of een moderator er een instelt. De openingsperiode zelf blijft intact.'
+        :'Wordt een <b>tijdelijke sluiting</b>, geen wijziging van de openingsperiode. Verloopt vanzelf, de structurele gegevens blijven intact.';
+    }
+    if(report.type==='season'){
+      obs='<b>Voorgestelde opening: '+$('pSD').value+' '+MN[report.propSM]+' – '+$('pED').value+' '+MN[report.propEM]+'</b>'+(report.note?'\n“'+report.note+'”':'');
+      cur='Huidige opening: <b>'+openingTxt+'</b>';
+      acts='<button class="modact"><span class="tag ask">CHECK</span> Check host-website, pas daarna de nieuwe openingsperiode toe</button>'+
+           '<button class="modact"><span class="tag one">1-KLIK</span> Pas voorstel toe (prijzen rekken of knippen automatisch)</button>';
+      note='<div class="mini"><div class="lbl">Huidig</div>'+miniBar(CUR.opening.sM,CUR.opening.sD,CUR.opening.eM,CUR.opening.eD)+'<div class="lbl">Voorgesteld</div>'+miniBar(report.propSM,report.propSD,report.propEM,report.propED)+'</div>';
+    }
+    const rejectedBanner=report.rejected?'<div class="rejected-banner"><b>Afgewezen</b> · '+report.rejected.reason+(report.rejected.text?'<br>“'+report.rejected.text+'”':'')+'<br>De melder krijgt dit bericht als notificatie.</div>':'';
+    const actionsHtml=report.rejected?'':'<div class="actions-mod"><div class="k">Moderator-acties</div>'+acts+
+        '<button class="modact reject" id="modReject"><span class="tag" style="background:rgba(217,109,90,.25);color:#F3B0A3">✕</span> Melding afwijzen…</button></div>';
+    z.innerHTML=rejectedBanner+
+                '<div class="vs"><div class="obs rep"><div class="k">Camperaar meldt</div><div class="v">'+obs+'</div></div>'+
+                '<div class="obs"><div class="k">Huidige gegevens</div><div class="v">'+cur+'</div></div></div>'+
+                actionsHtml+
+                (note&&!report.rejected?'<p class="modnote">'+note+'</p>':'');
+    const rj=document.getElementById('modReject');
+    rj&&rj.addEventListener('click',openReject);
+  }
+
+  /* ---------- reject modal ---------- */
+  let rejReason=null;
+  function openReject(){
+    rejReason=null;$('rejText').value='';
+    document.querySelectorAll('#rejChips .chipbtn').forEach(x=>x.classList.remove('on'));
+    updateRejBtn();
+    $('rejectOverlay').hidden=false;
+  }
+  function updateRejBtn(){$('rejConfirm').disabled=!(rejReason&&$('rejText').value.trim())}
+  document.querySelectorAll('#rejChips .chipbtn').forEach(b=>b.addEventListener('click',()=>{
+    rejReason=b.dataset.c;
+    document.querySelectorAll('#rejChips .chipbtn').forEach(x=>x.classList.toggle('on',x===b));
+    updateRejBtn();
+  }));
+  $('rejText').addEventListener('input',updateRejBtn);
+  $('rejCancel').addEventListener('click',()=>{$('rejectOverlay').hidden=true});
+  $('rejectOverlay').addEventListener('click',e=>{if(e.target.id==='rejectOverlay')$('rejectOverlay').hidden=true});
+  $('rejConfirm').addEventListener('click',()=>{
+    report.rejected={reason:rejReason,text:$('rejText').value.trim()};
+    $('rejectOverlay').hidden=true;
+    renderMod();
+  });
+
+  /* ---------- submit / reset ---------- */
+  $('submit').addEventListener('click',()=>{
+    $('flow').hidden=true;$('done').hidden=false;
+    const s={price:'Prijsverschil op '+rangeTxt()+': je betaalde '+(report.paid===0?'niets':payFmt(report.paid)+(report.payCcy!=='EUR'?' (≈ '+money(paidLocal())+')':''))+' per nacht.',
+             open:'Open op '+rangeTxt()+' terwijl de app gesloten zei.',
+             closedNow:'Gesloten op '+rangeTxt()+' terwijl de app open zei.',
+             season:'Voorgestelde openingsperiode: '+$('pSD').value+' '+MN[report.propSM]+' – '+$('pED').value+' '+MN[report.propEM]+'.'}[report.type];
+    $('doneSummary').textContent=s+' We hebben dit naar moderatie gestuurd.';
+    $('modWrap').open=true;
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+  $('again').addEventListener('click',()=>{
+    $('done').hidden=true;$('flow').hidden=false;$('step2').hidden=true;$('modWrap').hidden=true;
+    report.type=null;report.note='';report.basis=null;
+    document.querySelectorAll('.opt').forEach(x=>x.classList.remove('on'));
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+})();
+</script>
+</body>
+</html>
