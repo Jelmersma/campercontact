@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kandidaten bouwen</title>
+<style>
+  :root {
+    --bg: #1b1e24; --surface: #252a32; --surface-hi: #2f3540; --line: #383f4b;
+    --text: #e8eaed; --muted: #99a1ac; --go: #2fbf71; --go-ink: #0c2a19;
+    --warn: #e0a030; --bad: #e07070;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 2.5rem 1.25rem 5rem; background: var(--bg); color: var(--text);
+    font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-variant-numeric: tabular-nums;
+  }
+  .wrap { max-width: 38rem; margin: 0 auto; }
+  h1 { font-size: 1.4rem; font-weight: 650; margin: 0 0 .3rem; letter-spacing: -.01em; }
+  p.intro { color: var(--muted); margin: 0 0 2rem; }
+  h2 { font-size: .95rem; font-weight: 600; margin: 2rem 0 .6rem; }
+  button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--go); outline-offset: 2px; }
+
+  .field { margin-bottom: 1.25rem; }
+  .field > label { display: block; font-weight: 550; margin-bottom: .25rem; }
+  .field .hint { color: var(--muted); font-size: .875rem; margin-bottom: .5rem; }
+  input[type=file], input[type=text], input[type=number] {
+    width: 100%; padding: .65rem .8rem; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 8px; color: var(--text); font: inherit;
+  }
+  .row { display: flex; gap: .75rem; flex-wrap: wrap; }
+  .row .field { flex: 1; min-width: 8rem; }
+
+  .checks { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .chk {
+    display: inline-flex; align-items: center; gap: .4rem; padding: .45rem .75rem;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+    cursor: pointer; user-select: none;
+  }
+  .chk input { accent-color: var(--go); margin: 0; }
+  .chk.on { border-color: var(--go); }
+
+  .primary {
+    display: block; width: 100%; min-height: 52px; background: var(--go);
+    color: var(--go-ink); font-weight: 650; border-radius: 10px; margin-top: 1.5rem;
+  }
+  .primary[disabled] { background: var(--surface-hi); color: var(--muted); cursor: not-allowed; }
+  .ghost {
+    display: block; width: 100%; min-height: 48px; border: 1px solid var(--line);
+    border-radius: 10px; margin-top: .6rem;
+  }
+
+  .note {
+    background: var(--surface); border-left: 3px solid var(--warn); padding: .75rem 1rem;
+    border-radius: 0 8px 8px 0; color: var(--muted); font-size: .9rem; margin: 1.25rem 0;
+  }
+  .note strong { color: var(--text); font-weight: 600; }
+
+  #log {
+    margin-top: 1.5rem; background: var(--surface); border-radius: 10px;
+    padding: 1rem 1.1rem; display: none;
+  }
+  #log.on { display: block; }
+  .barline { height: 6px; background: var(--surface-hi); border-radius: 3px; overflow: hidden; margin: .5rem 0 1rem; }
+  .barline > div { height: 100%; width: 0; background: var(--go); transition: width .2s; }
+  #steps div { padding: .15rem 0; font-size: .9rem; color: var(--muted); }
+  #steps div.ok::before { content: "\2713  "; color: var(--go); }
+  #steps div.busy::before { content: "\00b7  "; }
+  #steps div.fail::before { content: "\2717  "; color: var(--bad); }
+  #steps div.ok, #steps div.fail { color: var(--text); }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: .9rem; }
+  th, td { text-align: left; padding: .35rem .5rem .35rem 0; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 500; }
+  td.num { text-align: right; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Kandidaten bouwen</h1>
+  <p class="intro">Upload een lijst locaties, krijg een kandidatenbestand terug voor de selectietool. Alles gebeurt in dit tabblad; er gaat niets naar een server behalve de aanvragen aan Panoramax.</p>
+
+  <div class="field">
+    <label for="file">Locatiebestand</label>
+    <div class="hint">CSV met een kolom sitecode (of site_code), latitude en longitude. Name, city en country worden meegenomen als ze er zijn.</div>
+    <input type="file" id="file" accept=".csv,text/csv">
+  </div>
+
+  <div id="detected" class="note" hidden></div>
+
+  <h2>Bronnen</h2>
+  <div class="checks">
+    <label class="chk on"><input type="checkbox" id="srcML" checked> Magic Lane</label>
+    <label class="chk on"><input type="checkbox" id="srcAerial" checked> Open luchtfoto</label>
+    <label class="chk on"><input type="checkbox" id="srcPX" checked> Panoramax</label>
+  </div>
+
+  <div class="row" style="margin-top:1.25rem">
+    <div class="field">
+      <label for="zooms">Magic Lane zoom</label>
+      <div class="hint">Komma's ertussen.</div>
+      <input type="text" id="zooms" value="17,18">
+    </div>
+    <div class="field">
+      <label for="spans">Luchtfoto breedte</label>
+      <div class="hint">Meters in beeld.</div>
+      <input type="text" id="spans" value="150,400">
+    </div>
+    <div class="field">
+      <label for="radius">Panoramax straal</label>
+      <div class="hint">Meters.</div>
+      <input type="number" id="radius" value="120" min="20" max="500" step="10">
+    </div>
+  </div>
+
+  <button class="primary" id="go" disabled>Kandidaten bouwen</button>
+
+  <div id="log">
+    <div class="barline"><div id="bar"></div></div>
+    <div id="steps"></div>
+    <div id="result"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+const LAYERS_LOCAL = "imagery_photo_layers.json";
+const LAYERS_FALLBACK = "https://raw.githubusercontent.com/osmlab/editor-layer-index/gh-pages/imagery.geojson";
+const PANORAMAX = [
+  ["osm-fr", "https://api.panoramax.xyz/api"],
+  ["ign", "https://panoramax.ign.fr/api"]
+];
+const WIDTH = 1024, HEIGHT = 768;
+const MAX_AGE_YEARS = 6, AGE_PENALTY_M = 15, TOP_PX = 3;
+const R = 6378137;
+
+const FIELDS = ["sitecode","candidate_id","source","source_layer","kind","url","thumb_url",
+  "local_path","latitude","longitude","country","ground_span_m","capture_date","age_years",
+  "distance_m","heading","is_360","px_width","px_height","licence","attribution_text",
+  "commercial_ok","quality_flag","score","rank_in_source","fetched_at"];
+const QUEUE_FIELDS = ["sitecode","name","city","country","country_code","latitude",
+  "longitude","views_last12months","priority_rank","batch"];
+
+// Tile services have no way to return an image centred on a point in one
+// request, so the big families are mapped to the WMS endpoint of the same data.
+const TMS_TO_WMS = {
+  "https://data.geopf.fr/tms/1.0.0/HR.ORTHOIMAGERY.ORTHOPHOTOS":
+    "https://data.geopf.fr/wms-r/wms?LAYERS=HR.ORTHOIMAGERY.ORTHOPHOTOS&STYLES=&CRS={proj}&BBOX={bbox}&FORMAT=image/jpeg&WIDTH={width}&HEIGHT={height}&VERSION=1.3.0&SERVICE=WMS&REQUEST=GetMap",
+  "https://data.geopf.fr/tms/1.0.0/ORTHOIMAGERY.ORTHOPHOTOS.ORTHO-EXPRESS.2025":
+    "https://data.geopf.fr/wms-r/wms?LAYERS=ORTHOIMAGERY.ORTHOPHOTOS.ORTHO-EXPRESS.2025&STYLES=&CRS={proj}&BBOX={bbox}&FORMAT=image/jpeg&WIDTH={width}&HEIGHT={height}&VERSION=1.3.0&SERVICE=WMS&REQUEST=GetMap",
+  "https://data.geopf.fr/tms/1.0.0/ORTHOIMAGERY.ORTHOPHOTOS.RVB-EXPRESS.2026":
+    "https://data.geopf.fr/wms-r/wms?LAYERS=ORTHOIMAGERY.ORTHOPHOTOS.RVB-EXPRESS.2026&STYLES=&CRS={proj}&BBOX={bbox}&FORMAT=image/jpeg&WIDTH={width}&HEIGHT={height}&VERSION=1.3.0&SERVICE=WMS&REQUEST=GetMap",
+  "https://tms-pnoa-ma.idee.es/1.0.0/pnoa-ma":
+    "https://www.ign.es/wms-inspire/pnoa-ma?LAYERS=OI.OrthoimageCoverage&STYLES=&CRS={proj}&BBOX={bbox}&FORMAT=image/jpeg&WIDTH={width}&HEIGHT={height}&VERSION=1.3.0&SERVICE=WMS&REQUEST=GetMap",
+  "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile":
+    "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/export?bbox={bbox}&bboxSR=3857&imageSR=3857&size={width},{height}&format=jpg&f=image",
+  "https://service.pdok.nl/hwh/luchtfotorgb/wms/v1_0":
+    "https://service.pdok.nl/hwh/luchtfotorgb/wms/v1_0?LAYERS=Actueel_orthoHR&STYLES=&CRS={proj}&BBOX={bbox}&FORMAT=image/jpeg&WIDTH={width}&HEIGHT={height}&VERSION=1.3.0&SERVICE=WMS&REQUEST=GetMap"
+};
+
+let sites = [], layers = null;
+
+/* ---------- csv ---------- */
+
+function parseCSV(text) {
+  const rows = []; let row = [], field = "", quoted = false;
+  text = text.replace(/^\uFEFF/, "");
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) {
+      if (c === '"') { if (text[i+1] === '"') { field += '"'; i++; } else quoted = false; }
+      else field += c;
+    } else if (c === '"') quoted = true;
+    else if (c === "," || c === ";") { row.push(field); field = ""; }
+    else if (c === "\n") { row.push(field); rows.push(row); row = []; field = ""; }
+    else if (c !== "\r") field += c;
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  const head = rows.shift().map(h => h.trim().toLowerCase());
+  return rows.filter(r => r.length > 1)
+             .map(r => Object.fromEntries(head.map((h, i) => [h, (r[i] ?? "").trim()])));
+}
+
+const get = (row, ...names) => {
+  for (const n of names) if (row[n]) return row[n];
+  return "";
+};
+
+function csvCell(v) {
+  const s = v === undefined || v === null ? "" : String(v);
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+function toCSV(rows, fields) {
+  return [fields.join(",")]
+    .concat(rows.map(r => fields.map(f => csvCell(r[f])).join(",")))
+    .join("\n");
+}
+
+function download(name, text) {
+  const url = URL.createObjectURL(new Blob([text], { type: "text/csv;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/* ---------- geo ---------- */
+
+const rad = d => d * Math.PI / 180;
+
+function merc(lat, lon) {
+  lat = Math.max(Math.min(lat, 85.05), -85.05);
+  return [R * rad(lon), R * Math.log(Math.tan(Math.PI / 4 + rad(lat) / 2))];
+}
+
+function bbox3857(lat, lon, span) {
+  // Mercator metres are stretched by 1/cos(lat): skipping that gives a frame
+  // that is far too wide in the north and too narrow in the south.
+  const [x, y] = merc(lat, lon);
+  const hw = (span / Math.cos(rad(lat))) / 2;
+  const hh = hw * (HEIGHT / WIDTH);
+  return `${(x-hw).toFixed(2)},${(y-hh).toFixed(2)},${(x+hw).toFixed(2)},${(y+hh).toFixed(2)}`;
+}
+
+function haversine(lat1, lon1, lat2, lon2) {
+  const dp = rad(lat2 - lat1), dl = rad(lon2 - lon1);
+  const a = Math.sin(dp/2)**2 + Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dl/2)**2;
+  return 2 * 6371000 * Math.asin(Math.sqrt(a));
+}
+
+function inRing(x, y, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i], [xj, yj] = ring[j];
+    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+function covers(layer, lon, lat) {
+  const [minx, miny, maxx, maxy] = layer.bb;
+  if (lon < minx || lon > maxx || lat < miny || lat > maxy) return false;
+  for (const poly of layer.p) {
+    if (!inRing(lon, lat, poly[0])) continue;
+    let hole = false;
+    for (let h = 1; h < poly.length; h++) if (inRing(lon, lat, poly[h])) { hole = true; break; }
+    if (!hole) return true;
+  }
+  return false;
+}
+
+function wmsFor(url) {
+  if (url.includes("{bbox}") || url.toUpperCase().includes("BBOX=")) return [url, true];
+  for (const [prefix, repl] of Object.entries(TMS_TO_WMS))
+    if (url.startsWith(prefix)) return [repl, repl.includes("data.geopf.fr/wms-r")];
+  return [null, null];
+}
+
+const fill = (tpl, lat, lon, span) => tpl
+  .replace(/\{proj\}|\{crs\}|\{srs\}/g, "EPSG:3857")
+  .replace("{bbox}", bbox3857(lat, lon, span))
+  .replace("{width}", WIDTH).replace("{height}", HEIGHT);
+
+/* ---------- ui helpers ---------- */
+
+const el = id => document.getElementById(id);
+const steps = {};
+
+function step(key, text, cls) {
+  if (!steps[key]) {
+    steps[key] = document.createElement("div");
+    el("steps").appendChild(steps[key]);
+  }
+  steps[key].textContent = text;
+  steps[key].className = cls || "busy";
+}
+
+const progress = pct => { el("bar").style.width = Math.round(pct * 100) + "%"; };
+
+/* ---------- sources ---------- */
+
+function magicLane(site, zooms) {
+  return zooms.map((z, i) => ({
+    sitecode: site.sitecode, candidate_id: `ml_${site.sitecode}_z${z}`,
+    source: "magiclane", source_layer: `maprender zoom ${z}`, kind: "aerial",
+    url: `https://maprender.zavoianu.eu/render?lon=${site.lon.toFixed(5)}&lat=${site.lat.toFixed(5)}` +
+         `&zoom=${z}&style=satellite&authToken={MAGICLANE_TOKEN}&width=${WIDTH}&height=${HEIGHT}`,
+    latitude: site.lat.toFixed(6), longitude: site.lon.toFixed(6), country: site.country,
+    licence: "unverified", attribution_text: "Magic Lane", commercial_ok: "unverified",
+    score: 20 + i, rank_in_source: i + 1
+  })).map(r => ({ ...r, thumb_url: r.url }));
+}
+
+function aerial(site, spans) {
+  const hits = layers.filter(l => covers(l, site.lon, site.lat));
+  if (!hits.length) return { rows: [], reason: "geen bron" };
+  hits.sort((a, b) => a.g - b.g || b.z - a.z || b.y - a.y);
+  const [tpl, verified] = wmsFor(hits[0].u);
+  if (!tpl) return { rows: [], reason: "tegelservice" };
+  return {
+    rows: spans.map((span, i) => {
+      const url = fill(tpl, site.lat, site.lon, span);
+      return {
+        sitecode: site.sitecode, candidate_id: `ao_${site.sitecode}_${span}`,
+        source: "open_aerial",
+        source_layer: hits[0].n + (verified ? "" : " (ongecontroleerd)"),
+        kind: "aerial", url, thumb_url: url,
+        latitude: site.lat.toFixed(6), longitude: site.lon.toFixed(6), country: site.country,
+        ground_span_m: span, capture_date: hits[0].y || "",
+        licence: "open, per bron te checken", attribution_text: hits[0].a,
+        commercial_ok: verified ? "clean_tier" : "endpoint_unverified",
+        score: 1 + i, rank_in_source: i + 1
+      };
+    }),
+    name: hits[0].n
+  };
+}
+
+async function panoramax(site, radius, since) {
+  const dlat = radius / 111320, dlon = radius / (111320 * Math.max(Math.cos(rad(site.lat)), .01));
+  const bbox = [site.lon - dlon, site.lat - dlat, site.lon + dlon, site.lat + dlat]
+    .map(v => v.toFixed(6)).join(",");
+  const found = [];
+  for (const [name, base] of PANORAMAX) {
+    const url = `${base}/search?bbox=${bbox}&limit=40&datetime=${since}/..`;
+    let data;
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) continue;
+      data = await resp.json();
+    } catch (e) { throw new Error("cors"); }
+    for (const item of (data.features || [])) {
+      const c = item.geometry && item.geometry.coordinates;
+      if (!c || c.length < 2) continue;
+      const props = item.properties || {};
+      const when = props.datetime || props.created || item.datetime;
+      if (!when) continue;
+      const captured = new Date(String(when).replace(" ", "T"));
+      if (isNaN(captured)) continue;
+      const age = (Date.now() - captured.getTime()) / (365.25 * 864e5);
+      if (age > MAX_AGE_YEARS) continue;
+      const dist = haversine(site.lat, site.lon, c[1], c[0]);
+      const assets = item.assets || {};
+      const pick = keys => { for (const k of keys) if (assets[k] && assets[k].href) return assets[k].href; return ""; };
+      const seqs = props.sequences;
+      found.push({
+        instance: name, dist, age,
+        date: captured.toISOString().slice(0, 10),
+        score: dist + AGE_PENALTY_M * age,
+        seq: (Array.isArray(seqs) && seqs.length ? (seqs[0].id || seqs[0]) : item.collection) || "?",
+        full: pick(["hd", "sd", "thumb"]), thumb: pick(["thumb", "sd", "hd"]),
+        heading: props["view:azimuth"] ?? "",
+        pano: /equirect|spherical/i.test(String(props["pers:camera_projection"] || "")),
+        id: item.id, attr: name
+      });
+    }
+  }
+  found.sort((a, b) => a.score - b.score);
+  const chosen = [], seen = new Set();
+  for (const f of found) { if (seen.has(f.seq)) continue; chosen.push(f); seen.add(f.seq); if (chosen.length === TOP_PX) break; }
+  for (const f of found) { if (chosen.length === TOP_PX) break; if (!chosen.includes(f)) chosen.push(f); }
+  return chosen.map((f, i) => ({
+    sitecode: site.sitecode, candidate_id: `px_${site.sitecode}_${i + 1}`,
+    source: "panoramax", source_layer: f.instance, kind: "street",
+    url: f.full, thumb_url: f.thumb || f.full,
+    latitude: site.lat.toFixed(6), longitude: site.lon.toFixed(6), country: site.country,
+    capture_date: f.date, age_years: f.age.toFixed(2), distance_m: Math.round(f.dist),
+    heading: f.heading, is_360: f.pano, licence: "CC-BY-SA-4.0",
+    attribution_text: `Panoramax (${f.instance}), CC-BY-SA-4.0`,
+    commercial_ok: "share_alike_review",
+    score: Math.round(f.score), rank_in_source: i + 1
+  }));
+}
+
+/* ---------- run ---------- */
+
+async function loadLayers() {
+  step("layers", "Luchtfoto-index laden", "busy");
+  try {
+    const r = await fetch(LAYERS_LOCAL);
+    if (!r.ok) throw new Error("404");
+    layers = await r.json();
+  } catch (e) {
+    const r = await fetch(LAYERS_FALLBACK);
+    const raw = await r.json();
+    layers = raw.features.filter(f =>
+        f.properties.category === "photo" &&
+        ["wms","tms","wmts"].includes(f.properties.type) &&
+        f.geometry && f.properties.permission_osm !== "explicit" &&
+        f.properties.permission_osm !== "implicit")
+      .map(f => {
+        const polys = f.geometry.type === "MultiPolygon" ? f.geometry.coordinates : [f.geometry.coordinates];
+        const xs = [], ys = [];
+        polys.forEach(p => p.forEach(r => r.forEach(([x, y]) => { xs.push(x); ys.push(y); })));
+        const year = parseInt((f.properties.end_date || f.properties.start_date || "0").slice(0, 4)) || 0;
+        const z = f.properties.max_zoom || 0;
+        return { n: f.properties.name, u: f.properties.url, t: f.properties.type,
+                 a: (f.properties.attribution || {}).text || "", z, y: year,
+                 g: z >= 20 && year >= 2019 ? 0 : (z >= 20 || (z >= 19 && year >= 2019)) ? 1 : z >= 18 ? 2 : 3,
+                 bb: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)], p: polys };
+      });
+  }
+  step("layers", `Luchtfoto-index geladen, ${layers.length} bronnen`, "ok");
+}
+
+async function run() {
+  el("go").disabled = true;
+  el("log").classList.add("on");
+  el("result").innerHTML = "";
+
+  const useML = el("srcML").checked, useAerial = el("srcAerial").checked, usePX = el("srcPX").checked;
+  const zooms = el("zooms").value.split(",").map(s => parseInt(s.trim())).filter(n => n >= 1);
+  const spans = el("spans").value.split(",").map(s => parseInt(s.trim())).filter(n => n > 0);
+  const radius = Math.max(20, Number(el("radius").value) || 120);
+  const since = new Date(Date.now() - MAX_AGE_YEARS * 365.25 * 864e5).toISOString().slice(0, 10);
+
+  const rows = [], queue = [];
+  const counts = { magiclane: 0, open_aerial: 0, panoramax: 0 };
+  const misses = { "geen bron": 0, "tegelservice": 0 };
+  let pxSites = 0, pxFailed = false;
+
+  if (useAerial && !layers) {
+    try { await loadLayers(); }
+    catch (e) { step("layers", "Luchtfoto-index kon niet geladen worden", "fail"); }
+  }
+
+  step("build", `Bezig met 0 van ${sites.length} locaties`, "busy");
+  for (let i = 0; i < sites.length; i++) {
+    const site = sites[i];
+    queue.push({
+      sitecode: site.sitecode, name: site.name, city: site.city,
+      country: site.country, country_code: site.cc,
+      latitude: site.lat, longitude: site.lon,
+      views_last12months: site.views || 0, priority_rank: i + 1, batch: 1
+    });
+
+    if (useML) { const r = magicLane(site, zooms); rows.push(...r); counts.magiclane += r.length; }
+    if (useAerial && layers) {
+      const out = aerial(site, spans);
+      if (out.rows.length) { rows.push(...out.rows); counts.open_aerial += out.rows.length; }
+      else misses[out.reason]++;
+    }
+    if (usePX && !pxFailed) {
+      try {
+        const r = await panoramax(site, radius, since);
+        if (r.length) { rows.push(...r); counts.panoramax += r.length; pxSites++; }
+      } catch (e) {
+        pxFailed = true;
+        step("px", "Panoramax geblokkeerd door de browser, overgeslagen", "fail");
+      }
+    }
+    if (i % 5 === 0 || i === sites.length - 1) {
+      step("build", `Bezig met ${i + 1} van ${sites.length} locaties`, "busy");
+      progress((i + 1) / sites.length);
+      await new Promise(r => setTimeout(r, 0));
+    }
+  }
+  step("build", `${sites.length} locaties verwerkt`, "ok");
+
+  const stamp = new Date().toISOString().slice(0, 10);
+  download(`candidates_${stamp}.csv`, toCSV(rows, FIELDS));
+  download(`queue_${stamp}.csv`, toCSV(queue, QUEUE_FIELDS));
+
+  el("result").innerHTML =
+    "<table><tr><th>bron</th><th class=num>kandidaten</th></tr>" +
+    `<tr><td>Magic Lane</td><td class=num>${counts.magiclane}</td></tr>` +
+    `<tr><td>Open luchtfoto</td><td class=num>${counts.open_aerial}</td></tr>` +
+    `<tr><td>Panoramax</td><td class=num>${counts.panoramax}` +
+      (usePX ? ` <span style="color:var(--muted)">(${pxSites} locaties)</span>` : "") + "</td></tr>" +
+    `<tr><td><strong>Totaal</strong></td><td class=num><strong>${rows.length}</strong></td></tr></table>` +
+    `<p style="color:var(--muted);font-size:.9rem">Zonder luchtfotobron: ${misses["geen bron"]}. ` +
+    `Bron alleen als tegelservice beschikbaar: ${misses["tegelservice"]}.</p>` +
+    `<button class="ghost" onclick="location.reload()">Opnieuw beginnen</button>`;
+  el("go").disabled = false;
+}
+
+/* ---------- wiring ---------- */
+
+el("file").addEventListener("change", ev => {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const fr = new FileReader();
+  fr.onload = () => {
+    const raw = parseCSV(String(fr.result));
+    sites = raw.map(r => ({
+      sitecode: get(r, "sitecode", "site_code", "code"),
+      name: get(r, "name", "naam"), city: get(r, "city", "plaats"),
+      country: get(r, "country", "land"), cc: get(r, "country_code", "cc"),
+      views: get(r, "views_last12months", "views"),
+      lat: parseFloat(get(r, "latitude", "lat")),
+      lon: parseFloat(get(r, "longitude", "lon", "lng"))
+    })).filter(s => s.sitecode && isFinite(s.lat) && isFinite(s.lon));
+
+    const box = el("detected");
+    box.hidden = false;
+    if (!sites.length) {
+      box.innerHTML = "<strong>Geen bruikbare rijen.</strong> Controleer of er kolommen " +
+        "sitecode, latitude en longitude in staan.";
+      el("go").disabled = true;
+    } else {
+      const skipped = raw.length - sites.length;
+      box.innerHTML = `<strong>${sites.length} locaties gelezen.</strong> ` +
+        (skipped ? `${skipped} rijen overgeslagen wegens ontbrekende code of coördinaten. ` : "") +
+        `Eerste: ${sites[0].sitecode}, ${sites[0].lat.toFixed(4)}, ${sites[0].lon.toFixed(4)}.`;
+      el("go").disabled = false;
+    }
+  };
+  fr.readAsText(file);
+});
+
+document.querySelectorAll(".chk input").forEach(cb =>
+  cb.addEventListener("change", () => cb.closest(".chk").classList.toggle("on", cb.checked)));
+
+el("go").addEventListener("click", run);
+</script>
+</body>
+</html>
